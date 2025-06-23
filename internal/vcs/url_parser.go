@@ -20,17 +20,37 @@ func NewURLParser() *URLParser {
 // ParseRepositoryURL parses a repository URL or path and returns repository information
 func (p *URLParser) ParseRepositoryURL(input string, defaultPlatform models.Platform) (*models.RepositoryInfo, error) {
 	input = strings.TrimSpace(input)
-	
+
+	// Extract branch from fragment (e.g., #develop)
+	var branch string
+	if strings.Contains(input, "#") {
+		parts := strings.Split(input, "#")
+		if len(parts) == 2 {
+			input = parts[0]
+			branch = parts[1]
+		}
+	}
+
 	// Handle URLs
 	if strings.HasPrefix(input, "http://") || strings.HasPrefix(input, "https://") {
-		return p.parseURL(input)
+		repoInfo, err := p.parseURL(input)
+		if err != nil {
+			return nil, err
+		}
+		repoInfo.Branch = branch
+		return repoInfo, nil
 	}
-	
+
 	// Handle SSH URLs
 	if strings.HasPrefix(input, "git@") {
-		return p.parseSSHURL(input)
+		repoInfo, err := p.parseSSHURL(input)
+		if err != nil {
+			return nil, err
+		}
+		repoInfo.Branch = branch
+		return repoInfo, nil
 	}
-	
+
 	// Handle owner/repo format (use specified default platform)
 	if strings.Contains(input, "/") && !strings.Contains(input, " ") {
 		parts := strings.Split(input, "/")
@@ -45,10 +65,11 @@ func (p *URLParser) ParseRepositoryURL(input string, defaultPlatform models.Plat
 				Owner:    parts[0],
 				Name:     parts[1],
 				FullName: input,
+				Branch:   branch,
 			}, nil
 		}
 	}
-	
+
 	// Default to specified platform for bare repository names, or GitLab for backward compatibility
 	platform := defaultPlatform
 	if platform == "" {
@@ -59,6 +80,7 @@ func (p *URLParser) ParseRepositoryURL(input string, defaultPlatform models.Plat
 		Owner:    "",
 		Name:     input,
 		FullName: input,
+		Branch:   branch,
 	}, nil
 }
 
@@ -68,7 +90,7 @@ func (p *URLParser) parseURL(input string) (*models.RepositoryInfo, error) {
 	if err != nil {
 		return nil, fmt.Errorf("invalid URL: %w", err)
 	}
-	
+
 	switch u.Hostname() {
 	case "github.com", "www.github.com":
 		return p.parseGitHubURL(u, input)
@@ -93,15 +115,15 @@ func (p *URLParser) parseGitHubURL(u *url.URL, original string) (*models.Reposit
 	if len(pathParts) < 2 {
 		return nil, fmt.Errorf("invalid GitHub URL format")
 	}
-	
+
 	owner := pathParts[0]
 	repo := pathParts[1]
-	
+
 	// Remove .git suffix if present
 	if strings.HasSuffix(repo, ".git") {
 		repo = strings.TrimSuffix(repo, ".git")
 	}
-	
+
 	return &models.RepositoryInfo{
 		Platform: models.PlatformGitHub,
 		Owner:    owner,
@@ -118,15 +140,15 @@ func (p *URLParser) parseGitLabURL(u *url.URL, original string) (*models.Reposit
 	if len(pathParts) < 2 {
 		return nil, fmt.Errorf("invalid GitLab URL format")
 	}
-	
+
 	// For GitLab, the full path is the "owner" for API purposes
 	fullPath := strings.Join(pathParts, "/")
-	
+
 	// Remove .git suffix if present
 	if strings.HasSuffix(fullPath, ".git") {
 		fullPath = strings.TrimSuffix(fullPath, ".git")
 	}
-	
+
 	return &models.RepositoryInfo{
 		Platform: models.PlatformGitLab,
 		Owner:    pathParts[0],
@@ -141,16 +163,16 @@ func (p *URLParser) parseSSHURL(input string) (*models.RepositoryInfo, error) {
 	// SSH URL formats:
 	// git@github.com:owner/repo.git
 	// git@gitlab.com:owner/repo.git
-	
+
 	re := regexp.MustCompile(`^git@([^:]+):(.+)\.git$`)
 	matches := re.FindStringSubmatch(input)
 	if len(matches) != 3 {
 		return nil, fmt.Errorf("invalid SSH URL format")
 	}
-	
+
 	hostname := matches[1]
 	repoPath := matches[2]
-	
+
 	var platform models.Platform
 	switch hostname {
 	case "github.com":
@@ -161,9 +183,9 @@ func (p *URLParser) parseSSHURL(input string) (*models.RepositoryInfo, error) {
 		// Default to GitLab for self-hosted
 		platform = models.PlatformGitLab
 	}
-	
+
 	pathParts := strings.Split(repoPath, "/")
-	
+
 	return &models.RepositoryInfo{
 		Platform: platform,
 		Owner:    pathParts[0],
@@ -171,4 +193,4 @@ func (p *URLParser) parseSSHURL(input string) (*models.RepositoryInfo, error) {
 		FullName: repoPath,
 		URL:      input,
 	}, nil
-} 
+}

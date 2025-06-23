@@ -15,10 +15,10 @@ import (
 // Provider defines the interface for VCS providers (GitLab, GitHub, etc.)
 type Provider interface {
 	GetRepository(ctx context.Context, repoPath string) (*models.Repository, error)
-	GetRepositoryTree(ctx context.Context, repoPath string) ([]models.RepositoryTree, error)
-	GetFileContent(ctx context.Context, repoPath, filePath string) (string, error)
-	GetFileInfo(ctx context.Context, repoPath, filePath string) (*models.FileInfo, error)
-	GetMultipleFiles(ctx context.Context, repoPath string, filePaths []string, maxConcurrency int) ([]models.FileInfo, error)
+	GetRepositoryTree(ctx context.Context, repoPath, branch string) ([]models.RepositoryTree, error)
+	GetFileContent(ctx context.Context, repoPath, filePath, branch string) (string, error)
+	GetFileInfo(ctx context.Context, repoPath, filePath, branch string) (*models.FileInfo, error)
+	GetMultipleFiles(ctx context.Context, repoPath string, filePaths []string, branch string, maxConcurrency int) ([]models.FileInfo, error)
 	TestConnection(ctx context.Context) error
 }
 
@@ -40,20 +40,20 @@ func (p *GitLabProvider) GetRepository(ctx context.Context, repoPath string) (*m
 	return p.client.GetRepository(ctx, repoPath)
 }
 
-func (p *GitLabProvider) GetRepositoryTree(ctx context.Context, repoPath string) ([]models.RepositoryTree, error) {
-	return p.client.GetRepositoryTree(ctx, repoPath)
+func (p *GitLabProvider) GetRepositoryTree(ctx context.Context, repoPath, branch string) ([]models.RepositoryTree, error) {
+	return p.client.GetRepositoryTree(ctx, repoPath, branch)
 }
 
-func (p *GitLabProvider) GetFileContent(ctx context.Context, repoPath, filePath string) (string, error) {
-	return p.client.GetFileContent(ctx, repoPath, filePath)
+func (p *GitLabProvider) GetFileContent(ctx context.Context, repoPath, filePath, branch string) (string, error) {
+	return p.client.GetFileContent(ctx, repoPath, filePath, branch)
 }
 
-func (p *GitLabProvider) GetFileInfo(ctx context.Context, repoPath, filePath string) (*models.FileInfo, error) {
-	return p.client.GetFileInfo(ctx, repoPath, filePath)
+func (p *GitLabProvider) GetFileInfo(ctx context.Context, repoPath, filePath, branch string) (*models.FileInfo, error) {
+	return p.client.GetFileInfo(ctx, repoPath, filePath, branch)
 }
 
-func (p *GitLabProvider) GetMultipleFiles(ctx context.Context, repoPath string, filePaths []string, maxConcurrency int) ([]models.FileInfo, error) {
-	return p.client.GetMultipleFiles(ctx, repoPath, filePaths, maxConcurrency)
+func (p *GitLabProvider) GetMultipleFiles(ctx context.Context, repoPath string, filePaths []string, branch string, maxConcurrency int) ([]models.FileInfo, error) {
+	return p.client.GetMultipleFiles(ctx, repoPath, filePaths, branch, maxConcurrency)
 }
 
 func (p *GitLabProvider) TestConnection(ctx context.Context) error {
@@ -82,36 +82,36 @@ func (p *GitHubProvider) GetRepository(ctx context.Context, repoPath string) (*m
 	return p.client.GetRepository(ctx, owner, repo)
 }
 
-func (p *GitHubProvider) GetRepositoryTree(ctx context.Context, repoPath string) ([]models.RepositoryTree, error) {
+func (p *GitHubProvider) GetRepositoryTree(ctx context.Context, repoPath, branch string) ([]models.RepositoryTree, error) {
 	owner, repo, err := parseGitHubRepoPath(repoPath)
 	if err != nil {
 		return nil, err
 	}
-	return p.client.GetRepositoryTree(ctx, owner, repo)
+	return p.client.GetRepositoryTree(ctx, owner, repo, branch)
 }
 
-func (p *GitHubProvider) GetFileContent(ctx context.Context, repoPath, filePath string) (string, error) {
+func (p *GitHubProvider) GetFileContent(ctx context.Context, repoPath, filePath, branch string) (string, error) {
 	owner, repo, err := parseGitHubRepoPath(repoPath)
 	if err != nil {
 		return "", err
 	}
-	return p.client.GetFileContent(ctx, owner, repo, filePath)
+	return p.client.GetFileContent(ctx, owner, repo, filePath, branch)
 }
 
-func (p *GitHubProvider) GetFileInfo(ctx context.Context, repoPath, filePath string) (*models.FileInfo, error) {
+func (p *GitHubProvider) GetFileInfo(ctx context.Context, repoPath, filePath, branch string) (*models.FileInfo, error) {
 	owner, repo, err := parseGitHubRepoPath(repoPath)
 	if err != nil {
 		return nil, err
 	}
-	return p.client.GetFileInfo(ctx, owner, repo, filePath)
+	return p.client.GetFileInfo(ctx, owner, repo, filePath, branch)
 }
 
-func (p *GitHubProvider) GetMultipleFiles(ctx context.Context, repoPath string, filePaths []string, maxConcurrency int) ([]models.FileInfo, error) {
+func (p *GitHubProvider) GetMultipleFiles(ctx context.Context, repoPath string, filePaths []string, branch string, maxConcurrency int) ([]models.FileInfo, error) {
 	owner, repo, err := parseGitHubRepoPath(repoPath)
 	if err != nil {
 		return nil, err
 	}
-	return p.client.GetMultipleFiles(ctx, owner, repo, filePaths, maxConcurrency)
+	return p.client.GetMultipleFiles(ctx, owner, repo, filePaths, branch, maxConcurrency)
 }
 
 func (p *GitHubProvider) TestConnection(ctx context.Context) error {
@@ -121,17 +121,37 @@ func (p *GitHubProvider) TestConnection(ctx context.Context) error {
 // ParseRepositoryURL parses a repository URL or path and returns repository information
 func ParseRepositoryURL(input string, defaultPlatform models.Platform) (*models.RepositoryInfo, error) {
 	input = strings.TrimSpace(input)
-	
+
+	// Extract branch from fragment (e.g., #develop)
+	var branch string
+	if strings.Contains(input, "#") {
+		parts := strings.Split(input, "#")
+		if len(parts) == 2 {
+			input = parts[0]
+			branch = parts[1]
+		}
+	}
+
 	// Handle URLs
 	if strings.HasPrefix(input, "http://") || strings.HasPrefix(input, "https://") {
-		return parseURL(input)
+		repoInfo, err := parseURL(input)
+		if err != nil {
+			return nil, err
+		}
+		repoInfo.Branch = branch
+		return repoInfo, nil
 	}
-	
+
 	// Handle SSH URLs
 	if strings.HasPrefix(input, "git@") {
-		return parseSSHURL(input)
+		repoInfo, err := parseSSHURL(input)
+		if err != nil {
+			return nil, err
+		}
+		repoInfo.Branch = branch
+		return repoInfo, nil
 	}
-	
+
 	// Handle owner/repo format (use specified default platform)
 	if strings.Contains(input, "/") && !strings.Contains(input, " ") {
 		parts := strings.Split(input, "/")
@@ -146,10 +166,11 @@ func ParseRepositoryURL(input string, defaultPlatform models.Platform) (*models.
 				Owner:    parts[0],
 				Name:     parts[1],
 				FullName: input,
+				Branch:   branch,
 			}, nil
 		}
 	}
-	
+
 	// Default to specified platform for bare repository names, or GitLab for backward compatibility
 	platform := defaultPlatform
 	if platform == "" {
@@ -160,6 +181,7 @@ func ParseRepositoryURL(input string, defaultPlatform models.Platform) (*models.
 		Owner:    "",
 		Name:     input,
 		FullName: input,
+		Branch:   branch,
 	}, nil
 }
 
@@ -168,7 +190,7 @@ func parseURL(input string) (*models.RepositoryInfo, error) {
 	if err != nil {
 		return nil, fmt.Errorf("invalid URL: %w", err)
 	}
-	
+
 	switch u.Hostname() {
 	case "github.com", "www.github.com":
 		return parseGitHubURL(u, input)
@@ -192,15 +214,15 @@ func parseGitHubURL(u *url.URL, original string) (*models.RepositoryInfo, error)
 	if len(pathParts) < 2 {
 		return nil, fmt.Errorf("invalid GitHub URL format")
 	}
-	
+
 	owner := pathParts[0]
 	repo := pathParts[1]
-	
+
 	// Remove .git suffix if present
 	if strings.HasSuffix(repo, ".git") {
 		repo = strings.TrimSuffix(repo, ".git")
 	}
-	
+
 	return &models.RepositoryInfo{
 		Platform: models.PlatformGitHub,
 		Owner:    owner,
@@ -216,15 +238,15 @@ func parseGitLabURL(u *url.URL, original string) (*models.RepositoryInfo, error)
 	if len(pathParts) < 2 {
 		return nil, fmt.Errorf("invalid GitLab URL format")
 	}
-	
+
 	// For GitLab, the full path is the "owner" for API purposes
 	fullPath := strings.Join(pathParts, "/")
-	
+
 	// Remove .git suffix if present
 	if strings.HasSuffix(fullPath, ".git") {
 		fullPath = strings.TrimSuffix(fullPath, ".git")
 	}
-	
+
 	return &models.RepositoryInfo{
 		Platform: models.PlatformGitLab,
 		Owner:    pathParts[0],
@@ -238,16 +260,16 @@ func parseSSHURL(input string) (*models.RepositoryInfo, error) {
 	// SSH URL formats:
 	// git@github.com:owner/repo.git
 	// git@gitlab.com:owner/repo.git
-	
+
 	re := regexp.MustCompile(`^git@([^:]+):(.+)\.git$`)
 	matches := re.FindStringSubmatch(input)
 	if len(matches) != 3 {
 		return nil, fmt.Errorf("invalid SSH URL format")
 	}
-	
+
 	hostname := matches[1]
 	repoPath := matches[2]
-	
+
 	var platform models.Platform
 	switch hostname {
 	case "github.com":
@@ -258,9 +280,9 @@ func parseSSHURL(input string) (*models.RepositoryInfo, error) {
 		// Default to GitLab for self-hosted
 		platform = models.PlatformGitLab
 	}
-	
+
 	pathParts := strings.Split(repoPath, "/")
-	
+
 	return &models.RepositoryInfo{
 		Platform: platform,
 		Owner:    pathParts[0],

@@ -10,7 +10,7 @@ import (
 	"sherpa/pkg/logger"
 	"sherpa/pkg/models"
 
-	"gitlab.com/gitlab-org/api/client-go"
+	gitlab "gitlab.com/gitlab-org/api/client-go"
 )
 
 // Client wraps the GitLab API client with additional functionality
@@ -63,26 +63,33 @@ func (c *Client) GetRepository(ctx context.Context, repoPath string) (*models.Re
 }
 
 // GetRepositoryTree fetches the complete repository tree structure
-func (c *Client) GetRepositoryTree(ctx context.Context, repoPath string) ([]models.RepositoryTree, error) {
-	logger.Logger.WithField("repository", repoPath).Debug("Fetching repository tree structure")
+func (c *Client) GetRepositoryTree(ctx context.Context, repoPath, branch string) ([]models.RepositoryTree, error) {
+	logger.Logger.WithFields(map[string]interface{}{
+		"repository": repoPath,
+		"branch":     branch,
+	}).Debug("Fetching repository tree structure")
 	var allFiles []models.RepositoryTree
 
 	// Start with root directory
-	files, err := c.getTreeRecursive(ctx, repoPath, "", &allFiles)
+	files, err := c.getTreeRecursive(ctx, repoPath, "", branch, &allFiles)
 	if err != nil {
-		logger.Logger.WithError(err).WithField("repository", repoPath).Error("Failed to fetch repository tree")
+		logger.Logger.WithError(err).WithFields(map[string]interface{}{
+			"repository": repoPath,
+			"branch":     branch,
+		}).Error("Failed to fetch repository tree")
 		return nil, fmt.Errorf("failed to fetch repository tree: %w", err)
 	}
 
 	logger.Logger.WithFields(map[string]interface{}{
 		"repository": repoPath,
+		"branch":     branch,
 		"file_count": len(files),
 	}).Debug("Successfully fetched repository tree")
 	return files, nil
 }
 
 // getTreeRecursive recursively fetches tree structure
-func (c *Client) getTreeRecursive(ctx context.Context, repoPath, path string, allFiles *[]models.RepositoryTree) ([]models.RepositoryTree, error) {
+func (c *Client) getTreeRecursive(ctx context.Context, repoPath, path, branch string, allFiles *[]models.RepositoryTree) ([]models.RepositoryTree, error) {
 	opt := &gitlab.ListTreeOptions{
 		Path:      &path,
 		Recursive: &[]bool{true}[0],
@@ -91,12 +98,38 @@ func (c *Client) getTreeRecursive(ctx context.Context, repoPath, path string, al
 		},
 	}
 
+	// Use specified branch or fall back to default branch detection
+	if branch != "" {
+		opt.Ref = &branch
+	}
+
 	var pageFiles []models.RepositoryTree
 
 	for {
 		treeNodes, resp, err := c.client.Repositories.ListTree(repoPath, opt, gitlab.WithContext(ctx))
 		if err != nil {
-			return nil, fmt.Errorf("failed to list tree for path %s: %w", path, err)
+			// If branch-specific call fails and we have a branch specified, try default branches
+			if branch != "" {
+				logger.Logger.WithFields(map[string]interface{}{
+					"repository": repoPath,
+					"branch":     branch,
+					"path":       path,
+				}).Debug("Branch-specific tree fetch failed, trying default branches")
+
+				// Try main branch
+				opt.Ref = &[]string{"main"}[0]
+				treeNodes, resp, err = c.client.Repositories.ListTree(repoPath, opt, gitlab.WithContext(ctx))
+				if err != nil {
+					// Try master branch
+					opt.Ref = &[]string{"master"}[0]
+					treeNodes, resp, err = c.client.Repositories.ListTree(repoPath, opt, gitlab.WithContext(ctx))
+					if err != nil {
+						return nil, fmt.Errorf("failed to list tree for path %s: %w", path, err)
+					}
+				}
+			} else {
+				return nil, fmt.Errorf("failed to list tree for path %s: %w", path, err)
+			}
 		}
 
 		for _, node := range treeNodes {
@@ -121,27 +154,48 @@ func (c *Client) getTreeRecursive(ctx context.Context, repoPath, path string, al
 }
 
 // GetFileContent fetches the content of a specific file
-func (c *Client) GetFileContent(ctx context.Context, repoPath, filePath string) (string, error) {
+func (c *Client) GetFileContent(ctx context.Context, repoPath, filePath, branch string) (string, error) {
 	logger.Logger.WithFields(map[string]interface{}{
 		"repository": repoPath,
 		"file":       filePath,
+		"branch":     branch,
 	}).Debug("Fetching file content")
-	opt := &gitlab.GetFileOptions{
-		Ref: &[]string{"main"}[0],
+
+	opt := &gitlab.GetFileOptions{}
+
+	// Use specified branch or fall back to default branch detection
+	if branch != "" {
+		opt.Ref = &branch
+	} else {
+		opt.Ref = &[]string{"main"}[0]
 	}
 
 	file, _, err := c.client.RepositoryFiles.GetFile(repoPath, filePath, opt, gitlab.WithContext(ctx))
 	if err != nil {
-		// Try with master branch if main doesn't exist
-		logger.Logger.WithField("file", filePath).Debug("Trying master branch")
-		opt.Ref = &[]string{"master"}[0]
-		file, _, err = c.client.RepositoryFiles.GetFile(repoPath, filePath, opt, gitlab.WithContext(ctx))
-		if err != nil {
-			logger.Logger.WithError(err).WithFields(map[string]interface{}{
+		// If branch-specific call fails, try default branches
+		if branch != "" {
+			logger.Logger.WithFields(map[string]interface{}{
 				"repository": repoPath,
 				"file":       filePath,
-			}).Error("Failed to fetch file from both main and master branches")
-			return "", fmt.Errorf("failed to fetch file %s: %w", filePath, err)
+				"branch":     branch,
+			}).Debug("Branch-specific file fetch failed, trying default branches")
+		}
+
+		// Try main branch
+		opt.Ref = &[]string{"main"}[0]
+		file, _, err = c.client.RepositoryFiles.GetFile(repoPath, filePath, opt, gitlab.WithContext(ctx))
+		if err != nil {
+			// Try master branch
+			opt.Ref = &[]string{"master"}[0]
+			file, _, err = c.client.RepositoryFiles.GetFile(repoPath, filePath, opt, gitlab.WithContext(ctx))
+			if err != nil {
+				logger.Logger.WithError(err).WithFields(map[string]interface{}{
+					"repository": repoPath,
+					"file":       filePath,
+					"branch":     branch,
+				}).Error("Failed to fetch file from all attempted branches")
+				return "", fmt.Errorf("failed to fetch file %s: %w", filePath, err)
+			}
 		}
 	}
 
@@ -150,19 +204,19 @@ func (c *Client) GetFileContent(ctx context.Context, repoPath, filePath string) 
 	if err != nil {
 		return "", fmt.Errorf("failed to decode file content: %w", err)
 	}
-	
+
 	return string(decoded), nil
 }
 
 // GetFileInfo fetches file information and content
-func (c *Client) GetFileInfo(ctx context.Context, repoPath, filePath string) (*models.FileInfo, error) {
+func (c *Client) GetFileInfo(ctx context.Context, repoPath, filePath, branch string) (*models.FileInfo, error) {
 	fileInfo := &models.FileInfo{
 		Path: filePath,
 		Name: extractFileName(filePath),
 	}
 
 	// Get file content
-	content, err := c.GetFileContent(ctx, repoPath, filePath)
+	content, err := c.GetFileContent(ctx, repoPath, filePath, branch)
 	if err != nil {
 		fileInfo.Error = err
 		return fileInfo, nil
@@ -177,10 +231,11 @@ func (c *Client) GetFileInfo(ctx context.Context, repoPath, filePath string) (*m
 }
 
 // GetMultipleFiles fetches multiple files concurrently with rate limiting
-func (c *Client) GetMultipleFiles(ctx context.Context, repoPath string, filePaths []string, maxConcurrency int) ([]models.FileInfo, error) {
+func (c *Client) GetMultipleFiles(ctx context.Context, repoPath string, filePaths []string, branch string, maxConcurrency int) ([]models.FileInfo, error) {
 	logger.Logger.WithFields(map[string]interface{}{
-		"repository":     repoPath,
-		"file_count":     len(filePaths),
+		"repository":      repoPath,
+		"file_count":      len(filePaths),
+		"branch":          branch,
 		"max_concurrency": maxConcurrency,
 	}).Debug("Fetching multiple files concurrently")
 	if maxConcurrency <= 0 {
@@ -196,7 +251,7 @@ func (c *Client) GetMultipleFiles(ctx context.Context, repoPath string, filePath
 			semaphore <- struct{}{}        // Acquire
 			defer func() { <-semaphore }() // Release
 
-			fileInfo, err := c.GetFileInfo(ctx, repoPath, path)
+			fileInfo, err := c.GetFileInfo(ctx, repoPath, path, branch)
 			if err != nil {
 				fileInfo = &models.FileInfo{
 					Path:  path,
@@ -233,9 +288,9 @@ func (c *Client) TestConnection(ctx context.Context) error {
 	}
 
 	logger.Logger.WithFields(map[string]interface{}{
-		"user_id":   user.ID,
-		"username":  user.Username,
-		"base_url":  c.baseURL,
+		"user_id":  user.ID,
+		"username": user.Username,
+		"base_url": c.baseURL,
 	}).Debug("GitLab connection test successful")
 	return nil
 }

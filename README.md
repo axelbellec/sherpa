@@ -163,7 +163,6 @@ Flags:
 
 ## Next Steps
 
-- 🌿 **Branch Targeting** - Add support for fetching specific branches instead of just the default branch
 - 🏷️ **Tag Support** - Ability to fetch specific tags or releases
 
 ## Contributing

@@ -36,8 +36,8 @@ type ProcessingConfig struct {
 
 // OutputConfig contains output generation settings
 type OutputConfig struct {
-	Directory       string `yaml:"directory"`
-	OrganizeByDate  bool   `yaml:"organize_by_date"`
+	Directory      string `yaml:"directory"`
+	OrganizeByDate bool   `yaml:"organize_by_date"`
 }
 
 // CacheConfig contains caching settings
@@ -57,14 +57,14 @@ const (
 
 // Repository represents a VCS repository
 type Repository struct {
-	ID          interface{} `json:"id"` // int for GitLab, int64 for GitHub
-	Name        string `json:"name"`
-	Path        string `json:"path"`
-	PathWithNamespace string `json:"path_with_namespace"`
-	WebURL      string `json:"web_url"`
-	Description string `json:"description"`
-	Platform    Platform `json:"platform"`
-	Owner       string `json:"owner"`
+	ID                interface{} `json:"id"` // int for GitLab, int64 for GitHub
+	Name              string      `json:"name"`
+	Path              string      `json:"path"`
+	PathWithNamespace string      `json:"path_with_namespace"`
+	WebURL            string      `json:"web_url"`
+	Description       string      `json:"description"`
+	Platform          Platform    `json:"platform"`
+	Owner             string      `json:"owner"`
 }
 
 // RepositoryTree represents the tree structure of a repository
@@ -90,25 +90,25 @@ type FileInfo struct {
 
 // ProcessingResult contains the result of processing a repository
 type ProcessingResult struct {
-	Repository    Repository
-	Files         []FileInfo
-	TotalFiles    int
-	TotalSize     int64
-	ProcessedAt   time.Time
-	Duration      time.Duration
-	Errors        []error
+	Repository  Repository
+	Files       []FileInfo
+	TotalFiles  int
+	TotalSize   int64
+	ProcessedAt time.Time
+	Duration    time.Duration
+	Errors      []error
 }
 
 // LLMsOutput represents the structure for generating llms.txt files
 type LLMsOutput struct {
-	Repository      Repository
-	GeneratedAt     time.Time
-	TotalFiles      int
-	TotalSize       int64
-	ProjectTree     []TreeNode
-	ConfigFiles     []FileInfo
-	Documentation   []FileInfo
-	FileContents    []FileInfo
+	Repository    Repository
+	GeneratedAt   time.Time
+	TotalFiles    int
+	TotalSize     int64
+	ProjectTree   []TreeNode
+	ConfigFiles   []FileInfo
+	Documentation []FileInfo
+	FileContents  []FileInfo
 }
 
 // TreeNode represents a node in the project tree structure
@@ -122,11 +122,12 @@ type TreeNode struct {
 
 // RepositoryInfo contains parsed repository information
 type RepositoryInfo struct {
-	Platform  Platform
-	Owner     string
-	Name      string
-	FullName  string // owner/repo format
-	URL       string // original URL if provided
+	Platform Platform
+	Owner    string
+	Name     string
+	FullName string // owner/repo format
+	URL      string // original URL if provided
+	Branch   string // target branch, empty means default branch
 }
 
 // CLIOptions contains command-line options

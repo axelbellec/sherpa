@@ -38,10 +38,10 @@ func NewClient(baseURL, token string) (*Client, error) {
 
 	// Create GitHub client
 	client := github.NewClient(oauth2Client)
-	
+
 	// Debug: log the initial base URL
 	logger.Logger.WithField("initial_base_url", client.BaseURL.String()).Debug("Initial GitHub client BaseURL")
-	
+
 	if baseURL != "https://api.github.com" {
 		newURL, err := client.BaseURL.Parse(baseURL)
 		if err != nil {
@@ -50,7 +50,7 @@ func NewClient(baseURL, token string) (*Client, error) {
 		client.BaseURL = newURL
 		logger.Logger.WithField("custom_base_url", client.BaseURL.String()).Debug("Set custom GitHub BaseURL")
 	}
-	
+
 	// Debug: log the final base URL
 	logger.Logger.WithField("final_base_url", client.BaseURL.String()).Debug("Final GitHub client BaseURL")
 
@@ -90,34 +90,51 @@ func (c *Client) GetRepository(ctx context.Context, owner, repo string) (*models
 }
 
 // GetRepositoryTree fetches the complete repository tree structure
-func (c *Client) GetRepositoryTree(ctx context.Context, owner, repo string) ([]models.RepositoryTree, error) {
+func (c *Client) GetRepositoryTree(ctx context.Context, owner, repo, branch string) ([]models.RepositoryTree, error) {
 	logger.Logger.WithFields(map[string]interface{}{
 		"owner":      owner,
 		"repository": repo,
+		"branch":     branch,
 	}).Debug("Fetching GitHub repository tree structure")
 
-	// Get default branch first
-	repository, _, err := c.client.Repositories.Get(ctx, owner, repo)
-	if err != nil {
-		return nil, fmt.Errorf("failed to get repository info: %w", err)
-	}
-
-	defaultBranch := repository.GetDefaultBranch()
-	if defaultBranch == "" {
-		defaultBranch = "main"
+	// Use specified branch or get default branch
+	targetBranch := branch
+	if targetBranch == "" {
+		// Get default branch first
+		repository, _, err := c.client.Repositories.Get(ctx, owner, repo)
+		if err != nil {
+			return nil, fmt.Errorf("failed to get repository info: %w", err)
+		}
+		targetBranch = repository.GetDefaultBranch()
+		if targetBranch == "" {
+			targetBranch = "main"
+		}
 	}
 
 	// Get tree recursively
-	tree, _, err := c.client.Git.GetTree(ctx, owner, repo, defaultBranch, true)
+	tree, _, err := c.client.Git.GetTree(ctx, owner, repo, targetBranch, true)
 	if err != nil {
-		// Try with master if main fails
-		if defaultBranch == "main" {
-			tree, _, err = c.client.Git.GetTree(ctx, owner, repo, "master", true)
+		// If specified branch fails, try default branches
+		if branch != "" {
+			logger.Logger.WithFields(map[string]interface{}{
+				"owner":      owner,
+				"repository": repo,
+				"branch":     branch,
+			}).Debug("Branch-specific tree fetch failed, trying default branches")
+
+			// Try main branch
+			tree, _, err = c.client.Git.GetTree(ctx, owner, repo, "main", true)
+			if err != nil {
+				// Try master branch
+				tree, _, err = c.client.Git.GetTree(ctx, owner, repo, "master", true)
+			}
 		}
+
 		if err != nil {
 			logger.Logger.WithError(err).WithFields(map[string]interface{}{
 				"owner":      owner,
 				"repository": repo,
+				"branch":     branch,
 			}).Error("Failed to fetch GitHub repository tree")
 			return nil, fmt.Errorf("failed to fetch repository tree: %w", err)
 		}
@@ -140,27 +157,50 @@ func (c *Client) GetRepositoryTree(ctx context.Context, owner, repo string) ([]m
 	logger.Logger.WithFields(map[string]interface{}{
 		"owner":      owner,
 		"repository": repo,
+		"branch":     targetBranch,
 		"file_count": len(allFiles),
 	}).Debug("Successfully fetched GitHub repository tree")
 	return allFiles, nil
 }
 
 // GetFileContent fetches the content of a specific file
-func (c *Client) GetFileContent(ctx context.Context, owner, repo, filePath string) (string, error) {
+func (c *Client) GetFileContent(ctx context.Context, owner, repo, filePath, branch string) (string, error) {
 	logger.Logger.WithFields(map[string]interface{}{
 		"owner":      owner,
 		"repository": repo,
 		"file":       filePath,
+		"branch":     branch,
 	}).Debug("Fetching GitHub file content")
 
-	fileContent, _, _, err := c.client.Repositories.GetContents(ctx, owner, repo, filePath, nil)
+	// Prepare options with branch if specified
+	opts := &github.RepositoryContentGetOptions{}
+	if branch != "" {
+		opts.Ref = branch
+	}
+
+	fileContent, _, _, err := c.client.Repositories.GetContents(ctx, owner, repo, filePath, opts)
 	if err != nil {
-		logger.Logger.WithError(err).WithFields(map[string]interface{}{
-			"owner":      owner,
-			"repository": repo,
-			"file":       filePath,
-		}).Error("Failed to fetch file from GitHub")
-		return "", fmt.Errorf("failed to fetch file %s: %w", filePath, err)
+		// If branch-specific call fails, try without branch specification (default branch)
+		if branch != "" {
+			logger.Logger.WithFields(map[string]interface{}{
+				"owner":      owner,
+				"repository": repo,
+				"file":       filePath,
+				"branch":     branch,
+			}).Debug("Branch-specific file fetch failed, trying default branch")
+
+			fileContent, _, _, err = c.client.Repositories.GetContents(ctx, owner, repo, filePath, nil)
+		}
+
+		if err != nil {
+			logger.Logger.WithError(err).WithFields(map[string]interface{}{
+				"owner":      owner,
+				"repository": repo,
+				"file":       filePath,
+				"branch":     branch,
+			}).Error("Failed to fetch file from GitHub")
+			return "", fmt.Errorf("failed to fetch file %s: %w", filePath, err)
+		}
 	}
 
 	if fileContent == nil {
@@ -176,14 +216,14 @@ func (c *Client) GetFileContent(ctx context.Context, owner, repo, filePath strin
 }
 
 // GetFileInfo fetches file information and content
-func (c *Client) GetFileInfo(ctx context.Context, owner, repo, filePath string) (*models.FileInfo, error) {
+func (c *Client) GetFileInfo(ctx context.Context, owner, repo, filePath, branch string) (*models.FileInfo, error) {
 	fileInfo := &models.FileInfo{
 		Path: filePath,
 		Name: extractFileName(filePath),
 	}
 
 	// Get file content
-	content, err := c.GetFileContent(ctx, owner, repo, filePath)
+	content, err := c.GetFileContent(ctx, owner, repo, filePath, branch)
 	if err != nil {
 		fileInfo.Error = err
 		return fileInfo, nil
@@ -198,11 +238,11 @@ func (c *Client) GetFileInfo(ctx context.Context, owner, repo, filePath string) 
 }
 
 // GetMultipleFiles fetches multiple files concurrently with rate limiting
-func (c *Client) GetMultipleFiles(ctx context.Context, owner, repo string, filePaths []string, maxConcurrency int) ([]models.FileInfo, error) {
+func (c *Client) GetMultipleFiles(ctx context.Context, owner, repo string, filePaths []string, branch string, maxConcurrency int) ([]models.FileInfo, error) {
 	logger.Logger.WithFields(map[string]interface{}{
-		"owner":          owner,
-		"repository":     repo,
-		"file_count":     len(filePaths),
+		"owner":           owner,
+		"repository":      repo,
+		"file_count":      len(filePaths),
 		"max_concurrency": maxConcurrency,
 	}).Debug("Fetching multiple files concurrently from GitHub")
 
@@ -219,7 +259,7 @@ func (c *Client) GetMultipleFiles(ctx context.Context, owner, repo string, fileP
 			semaphore <- struct{}{}        // Acquire
 			defer func() { <-semaphore }() // Release
 
-			fileInfo, err := c.GetFileInfo(ctx, owner, repo, path)
+			fileInfo, err := c.GetFileInfo(ctx, owner, repo, path, branch)
 			if err != nil {
 				fileInfo = &models.FileInfo{
 					Path:  path,
@@ -247,12 +287,12 @@ func (c *Client) TestConnection(ctx context.Context) error {
 		"base_url":     c.baseURL,
 		"token_prefix": c.token[:10] + "...",
 	}).Debug("Testing GitHub connection")
-	
+
 	user, resp, err := c.client.Users.Get(ctx, "")
 	if err != nil {
 		logger.Logger.WithError(err).WithFields(map[string]interface{}{
-			"base_url":     c.baseURL,
-			"status_code":  func() int {
+			"base_url": c.baseURL,
+			"status_code": func() int {
 				if resp != nil {
 					return resp.StatusCode
 				}
@@ -274,9 +314,9 @@ func (c *Client) TestConnection(ctx context.Context) error {
 	}
 
 	logger.Logger.WithFields(map[string]interface{}{
-		"user_id":   user.GetID(),
-		"username":  user.GetLogin(),
-		"base_url":  c.baseURL,
+		"user_id":  user.GetID(),
+		"username": user.GetLogin(),
+		"base_url": c.baseURL,
 	}).Debug("GitHub connection test successful")
 	return nil
 }

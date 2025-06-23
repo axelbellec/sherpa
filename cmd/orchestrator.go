@@ -49,17 +49,17 @@ func (o *Orchestrator) ProcessRepositories(ctx context.Context, reposByPlatform 
 
 	for platform, repoInfos := range reposByPlatform {
 		platformWg.Add(1)
-		
+
 		go func(platform models.Platform, repoInfos []*models.RepositoryInfo) {
 			defer platformWg.Done()
-			
+
 			logger.Logger.WithField("platform", platform).Info("Processing repositories for platform")
 
 			// Get token for this platform
 			platformToken, err := getTokenForPlatform(platform, o.config, o.cliOptions.Token)
 			if err != nil {
 				logger.Logger.WithError(err).WithField("platform", platform).Error("Failed to get token for platform")
-				
+
 				platformMu.Lock()
 				fmt.Fprintf(os.Stderr, "Failed to get token for platform %s: %v\n", platform, err)
 				platformMu.Unlock()
@@ -70,7 +70,7 @@ func (o *Orchestrator) ProcessRepositories(ctx context.Context, reposByPlatform 
 			provider, err := vcs.CreateProvider(platform, o.config, platformToken)
 			if err != nil {
 				logger.Logger.WithError(err).WithField("platform", platform).Error("Failed to create provider")
-				
+
 				platformMu.Lock()
 				fmt.Fprintf(os.Stderr, "Failed to create provider for platform %s: %v\n", platform, err)
 				platformMu.Unlock()
@@ -81,7 +81,7 @@ func (o *Orchestrator) ProcessRepositories(ctx context.Context, reposByPlatform 
 			logger.Logger.WithField("platform", platform).Info("Testing connection...")
 			if err := provider.TestConnection(ctx); err != nil {
 				logger.Logger.WithError(err).WithField("platform", platform).Error("Connection test failed")
-				
+
 				platformMu.Lock()
 				fmt.Fprintf(os.Stderr, "Connection test failed for platform %s: %v\n", platform, err)
 				platformMu.Unlock()
@@ -96,14 +96,14 @@ func (o *Orchestrator) ProcessRepositories(ctx context.Context, reposByPlatform 
 			// Process repositories concurrently within this platform
 			if err := o.processRepositoriesConcurrently(ctx, repoInfos, platform, repoProcessor, llmsGenerator, &platformMu); err != nil {
 				logger.Logger.WithError(err).WithField("platform", platform).Error("Failed to process repositories concurrently")
-				
+
 				platformMu.Lock()
 				fmt.Fprintf(os.Stderr, "Failed to process repositories for platform %s: %v\n", platform, err)
 				platformMu.Unlock()
 			}
 		}(platform, repoInfos)
 	}
-	
+
 	platformWg.Wait()
 
 	logger.Logger.Info("Sherpa fetch operation completed successfully")
@@ -127,27 +127,27 @@ func (o *Orchestrator) processRepositoriesConcurrently(
 	// Use a semaphore to limit concurrency
 	semaphore := make(chan struct{}, maxConcurrency)
 	var wg sync.WaitGroup
-	
+
 	logger.Logger.WithFields(map[string]interface{}{
-		"platform":        platform,
+		"platform":         platform,
 		"repository_count": len(repoInfos),
-		"max_concurrency": maxConcurrency,
+		"max_concurrency":  maxConcurrency,
 	}).Info("Starting concurrent repository processing")
 
 	for _, repoInfo := range repoInfos {
 		wg.Add(1)
-		
+
 		go func(repoInfo *models.RepositoryInfo) {
 			defer wg.Done()
-			
+
 			// Acquire semaphore
 			semaphore <- struct{}{}
 			defer func() { <-semaphore }()
-			
+
 			o.processRepository(ctx, repoInfo, platform, repoProcessor, llmsGenerator, platformMu)
 		}(repoInfo)
 	}
-	
+
 	wg.Wait()
 	return nil
 }
@@ -165,16 +165,17 @@ func (o *Orchestrator) processRepository(
 	logger.Logger.WithFields(map[string]interface{}{
 		"repository": repoPath,
 		"platform":   platform,
+		"branch":     repoInfo.Branch,
 	}).Info("Processing repository")
 
 	// Process repository
-	result, err := repoProcessor.ProcessRepository(ctx, repoPath)
+	result, err := repoProcessor.ProcessRepository(ctx, repoPath, repoInfo.Branch)
 	if err != nil {
 		logger.Logger.WithError(err).WithFields(map[string]interface{}{
 			"repository": repoPath,
 			"platform":   platform,
 		}).Error("Failed to process repository")
-		
+
 		platformMu.Lock()
 		fmt.Fprintf(os.Stderr, "Failed to process repository %s: %v\n", repoPath, err)
 		platformMu.Unlock()
@@ -202,7 +203,7 @@ func (o *Orchestrator) processRepository(
 	llmsOutput, err := llmsGenerator.GenerateOutput(result)
 	if err != nil {
 		logger.Logger.WithError(err).WithField("repository", repoPath).Error("Failed to generate LLMs output")
-		
+
 		platformMu.Lock()
 		fmt.Fprintf(os.Stderr, "Failed to generate LLMs output for %s: %v\n", repoPath, err)
 		platformMu.Unlock()
@@ -219,7 +220,7 @@ func (o *Orchestrator) processRepository(
 	logger.Logger.WithField("output_dir", repoOutputDir).Debug("Creating output directory")
 	if err := os.MkdirAll(repoOutputDir, 0755); err != nil {
 		logger.Logger.WithError(err).WithField("output_dir", repoOutputDir).Error("Failed to create output directory")
-		
+
 		platformMu.Lock()
 		fmt.Fprintf(os.Stderr, "Failed to create output directory %s: %v\n", repoOutputDir, err)
 		platformMu.Unlock()
@@ -229,17 +230,17 @@ func (o *Orchestrator) processRepository(
 	// Generate and write files concurrently
 	var fileWg sync.WaitGroup
 	fileWg.Add(2)
-	
+
 	// Generate and write llms.txt
 	go func() {
 		defer fileWg.Done()
-		
+
 		logger.Logger.WithField("repository", repoPath).Debug("Generating llms.txt")
 		llmsText := llmsGenerator.GenerateLLMsText(llmsOutput)
 		llmsPath := filepath.Join(repoOutputDir, "llms.txt")
 		if err := writeFile(llmsPath, llmsText); err != nil {
 			logger.Logger.WithError(err).WithField("file", llmsPath).Error("Failed to write llms.txt")
-			
+
 			platformMu.Lock()
 			fmt.Fprintf(os.Stderr, "Failed to write llms.txt for %s: %v\n", repoPath, err)
 			platformMu.Unlock()
@@ -251,13 +252,13 @@ func (o *Orchestrator) processRepository(
 	// Generate and write llms-full.txt
 	go func() {
 		defer fileWg.Done()
-		
+
 		logger.Logger.WithField("repository", repoPath).Debug("Generating llms-full.txt")
 		llmsFullText := llmsGenerator.GenerateLLMsFullText(llmsOutput)
 		llmsFullPath := filepath.Join(repoOutputDir, "llms-full.txt")
 		if err := writeFile(llmsFullPath, llmsFullText); err != nil {
 			logger.Logger.WithError(err).WithField("file", llmsFullPath).Error("Failed to write llms-full.txt")
-			
+
 			platformMu.Lock()
 			fmt.Fprintf(os.Stderr, "Failed to write llms-full.txt for %s: %v\n", repoPath, err)
 			platformMu.Unlock()
@@ -265,13 +266,13 @@ func (o *Orchestrator) processRepository(
 		}
 		logger.Logger.WithField("file", llmsFullPath).Debug("Successfully wrote llms-full.txt")
 	}()
-	
+
 	fileWg.Wait()
 
 	// Success message
 	logger.Logger.WithFields(map[string]interface{}{
 		"repository":      repoPath,
-		"platform":       platform,
+		"platform":        platform,
 		"files_processed": result.TotalFiles,
 		"total_size":      utils.FormatBytes(result.TotalSize),
 		"duration":        result.Duration.Round(time.Millisecond),
@@ -288,4 +289,4 @@ func (o *Orchestrator) processRepository(
 		fmt.Println()
 		platformMu.Unlock()
 	}
-} 
+}

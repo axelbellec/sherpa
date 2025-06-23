@@ -6,17 +6,18 @@ import (
 	"os"
 	"strings"
 
-	"github.com/spf13/cobra"
 	"sherpa/internal/config"
 	"sherpa/internal/vcs"
 	"sherpa/pkg/logger"
 	"sherpa/pkg/models"
+
+	"github.com/spf13/cobra"
 )
 
 var (
 	// Version information
 	Version = "0.0.1"
-	
+
 	// CLI flags
 	token               string
 	baseURL             string
@@ -58,6 +59,14 @@ Platform Detection:
   - GitHub: https://github.com/owner/repo or owner/repo
   - GitLab: https://gitlab.com/owner/repo or bare repo names (default)
 
+Branch Targeting:
+  Specify a target branch using URL fragment syntax (#branch):
+  - https://gitlab.com/owner/repo#develop
+  - https://github.com/owner/repo#feature-branch
+  - owner/repo#main
+  
+  If no branch is specified, the repository's default branch is used.
+
 Examples:
   # GitHub repositories
   sherpa fetch https://github.com/owner/repo --token $GITHUB_TOKEN
@@ -66,6 +75,10 @@ Examples:
   # GitLab repositories  
   sherpa fetch https://gitlab.com/owner/repo --token $GITLAB_TOKEN
   sherpa fetch platform-api --token $GITLAB_TOKEN
+
+  # Branch targeting
+  sherpa fetch owner/repo#feature-branch --token $GITHUB_TOKEN
+  sherpa fetch https://github.com/user/repo1#main https://gitlab.com/group/repo2#develop
 
   # Use default platform for owner/repo format
   sherpa fetch owner/repo --default-platform github
@@ -168,7 +181,7 @@ func runFetch(cmd *cobra.Command, args []string) error {
 // parseRepositories parses repository arguments and groups them by platform
 func parseRepositories(args []string, defaultPlatformFlag string) (map[models.Platform][]*models.RepositoryInfo, error) {
 	reposByPlatform := make(map[models.Platform][]*models.RepositoryInfo)
-	
+
 	// Parse the default platform from the flag
 	var defaultPlatformEnum models.Platform
 	switch strings.ToLower(defaultPlatformFlag) {
@@ -182,16 +195,16 @@ func parseRepositories(args []string, defaultPlatformFlag string) (map[models.Pl
 	default:
 		return nil, fmt.Errorf("invalid default platform '%s'. Valid options: github, gitlab", defaultPlatformFlag)
 	}
-	
+
 	for _, arg := range args {
 		repoInfo, err := vcs.ParseRepositoryURL(arg, defaultPlatformEnum)
 		if err != nil {
 			return nil, fmt.Errorf("failed to parse repository '%s': %w", arg, err)
 		}
-		
+
 		reposByPlatform[repoInfo.Platform] = append(reposByPlatform[repoInfo.Platform], repoInfo)
 	}
-	
+
 	return reposByPlatform, nil
 }
 
@@ -201,7 +214,7 @@ func getTokenForPlatform(platform models.Platform, config *models.Config, cliTok
 	if cliToken != "" {
 		return cliToken, nil
 	}
-	
+
 	// Get platform-specific token from environment based on the detected platform
 	switch platform {
 	case models.PlatformGitLab:
@@ -230,4 +243,3 @@ func writeFile(path, content string) error {
 	_, err = file.WriteString(content)
 	return err
 }
-
