@@ -1,7 +1,7 @@
 # Sherpa
 
 <div align="center">
-  <img src="./assets/sherpa-logo.png" alt="Sherpa Logo" width="400" />
+  <img src="./assets/sherpa-logo.png" alt="Sherpa Logo" width="90%" />
   <br />
   <strong>Code In, Context Out: Git-to-LLM Made Simple</strong>
   <br />
