@@ -27,6 +27,30 @@ Sherpa is a lightweight Go CLI tool that transforms your private repositories in
 go install github.com/axelbellec/sherpa@latest
 ```
 
+### Development
+
+This project uses [Task](https://taskfile.dev/) for development workflow:
+
+```bash
+# Install Task if not already available
+go install github.com/go-task/task/v3/cmd/task@latest
+
+# List available tasks
+task
+
+# Display project info (name and version)
+task info
+
+# Build the project binary
+task build
+
+# Install locally (builds first)
+task install
+
+# Run tests
+task tests
+```
+
 ### Basic Usage
 
 ```bash

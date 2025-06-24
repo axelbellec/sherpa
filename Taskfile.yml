@@ -8,7 +8,7 @@ vars:
     sh: cat go.mod | grep module | cut -d' ' -f2
   VERSION: 0.1.0
   TAG: "{{.PROJECT_NAME}}@{{.VERSION}}"
-  BUILD_FLAGS: '-ldflags="-w -s"'
+  BUILD_FLAGS: '-ldflags="-w -s"' # Strips debug info and symbol table
 
 tasks:
   default:
