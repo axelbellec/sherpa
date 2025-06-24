@@ -3,11 +3,11 @@ package cmd
 import (
 	"context"
 	"fmt"
-	"os"
 	"strings"
 
 	"sherpa/internal/config"
-	"sherpa/internal/vcs"
+	"sherpa/internal/adapters"
+	"sherpa/internal/orchestration"
 	"sherpa/pkg/logger"
 	"sherpa/pkg/models"
 
@@ -181,7 +181,7 @@ func runFetch(cmd *cobra.Command, args []string) error {
 	logger.Logger.Debug("Configuration loaded and repositories parsed successfully")
 
 	// Create orchestrator and process repositories
-	orchestrator := NewOrchestrator(config, cliOptions)
+	orchestrator := orchestration.NewOrchestrator(config, cliOptions)
 	return orchestrator.ProcessRepositories(ctx, reposByPlatform)
 }
 
@@ -204,7 +204,7 @@ func parseRepositories(args []string, defaultPlatformFlag string) (map[models.Pl
 	}
 
 	for _, arg := range args {
-		repoInfo, err := vcs.ParseRepositoryURL(arg, defaultPlatformEnum)
+		repoInfo, err := adapters.ParseRepositoryURL(arg, defaultPlatformEnum)
 		if err != nil {
 			return nil, fmt.Errorf("failed to parse repository '%s': %w", arg, err)
 		}
@@ -215,38 +215,3 @@ func parseRepositories(args []string, defaultPlatformFlag string) (map[models.Pl
 	return reposByPlatform, nil
 }
 
-// getTokenForPlatform gets the appropriate token for a platform
-func getTokenForPlatform(platform models.Platform, config *models.Config, cliToken string) (string, error) {
-	// If a token was provided via CLI flag, use it for all platforms
-	if cliToken != "" {
-		return cliToken, nil
-	}
-
-	// Get platform-specific token from environment based on the detected platform
-	switch platform {
-	case models.PlatformGitLab:
-		if envToken := os.Getenv(config.GitLab.TokenEnv); envToken != "" {
-			return envToken, nil
-		}
-		return "", fmt.Errorf("GitLab token not found. Set %s environment variable or use --token flag", config.GitLab.TokenEnv)
-	case models.PlatformGitHub:
-		if envToken := os.Getenv(config.GitHub.TokenEnv); envToken != "" {
-			return envToken, nil
-		}
-		return "", fmt.Errorf("GitHub token not found. Set %s environment variable or use --token flag", config.GitHub.TokenEnv)
-	default:
-		return "", fmt.Errorf("unsupported platform: %s", platform)
-	}
-}
-
-// writeFile writes content to a file
-func writeFile(path, content string) error {
-	file, err := os.Create(path)
-	if err != nil {
-		return err
-	}
-	defer file.Close()
-
-	_, err = file.WriteString(content)
-	return err
-}

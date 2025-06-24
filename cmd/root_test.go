@@ -3,6 +3,7 @@ package cmd
 import (
 	"testing"
 
+	"sherpa/internal/orchestration"
 	"sherpa/pkg/models"
 
 	"github.com/spf13/cobra"
@@ -159,7 +160,7 @@ func TestGetTokenForPlatform(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			token, err := getTokenForPlatform(tt.platform, config, tt.cliToken)
+			token, err := orchestration.GetTokenForPlatform(tt.platform, config, tt.cliToken)
 
 			if tt.expectedError {
 				assert.Error(t, err)

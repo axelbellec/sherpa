@@ -1,4 +1,4 @@
-package cmd
+package orchestration
 
 import (
 	"context"
@@ -8,9 +8,9 @@ import (
 	"sync"
 	"time"
 
-	"sherpa/internal/llms"
-	"sherpa/internal/processor"
-	"sherpa/internal/vcs"
+	"sherpa/internal/generators"
+	"sherpa/internal/pipeline"
+	"sherpa/internal/adapters"
 	"sherpa/pkg/logger"
 	"sherpa/pkg/models"
 	"sherpa/pkg/utils"
@@ -34,7 +34,7 @@ func NewOrchestrator(config *models.Config, cliOptions *models.CLIOptions) *Orch
 func (o *Orchestrator) ProcessRepositories(ctx context.Context, reposByPlatform map[models.Platform][]*models.RepositoryInfo) error {
 	// Create LLMs generator
 	logger.Logger.Debug("Creating LLMs generator")
-	llmsGenerator := llms.NewGenerator(true)
+	llmsGenerator := generators.NewGenerator(true)
 
 	// Process repositories by platform
 	totalRepos := 0
@@ -56,7 +56,7 @@ func (o *Orchestrator) ProcessRepositories(ctx context.Context, reposByPlatform 
 			logger.Logger.WithField("platform", platform).Info("Processing repositories for platform")
 
 			// Get token for this platform
-			platformToken, err := getTokenForPlatform(platform, o.config, o.cliOptions.Token)
+			platformToken, err := GetTokenForPlatform(platform, o.config, o.cliOptions.Token)
 			if err != nil {
 				logger.Logger.WithError(err).WithField("platform", platform).Error("Failed to get token for platform")
 
@@ -67,7 +67,7 @@ func (o *Orchestrator) ProcessRepositories(ctx context.Context, reposByPlatform 
 			}
 
 			// Create provider for this platform
-			provider, err := vcs.CreateProvider(platform, o.config, platformToken)
+			provider, err := adapters.CreateProvider(platform, o.config, platformToken)
 			if err != nil {
 				logger.Logger.WithError(err).WithField("platform", platform).Error("Failed to create provider")
 
@@ -95,7 +95,7 @@ func (o *Orchestrator) ProcessRepositories(ctx context.Context, reposByPlatform 
 
 			// Create processor for this platform
 			logger.Logger.Debug("Creating repository processor")
-			repoProcessor := processor.NewRepoProcessor(provider, o.config.Processing)
+			repoProcessor := pipeline.NewRepoProcessor(provider, o.config.Processing)
 
 			// Process repositories concurrently within this platform
 			if err := o.processRepositoriesConcurrently(ctx, repoInfos, platform, repoProcessor, llmsGenerator, &platformMu); err != nil {
@@ -119,8 +119,8 @@ func (o *Orchestrator) processRepositoriesConcurrently(
 	ctx context.Context,
 	repoInfos []*models.RepositoryInfo,
 	platform models.Platform,
-	repoProcessor *processor.RepoProcessor,
-	llmsGenerator *llms.Generator,
+	repoProcessor *pipeline.RepoProcessor,
+	llmsGenerator *generators.Generator,
 	platformMu *sync.Mutex,
 ) error {
 	maxConcurrency := o.cliOptions.MaxReposConcurrency
@@ -161,8 +161,8 @@ func (o *Orchestrator) processRepository(
 	ctx context.Context,
 	repoInfo *models.RepositoryInfo,
 	platform models.Platform,
-	repoProcessor *processor.RepoProcessor,
-	llmsGenerator *llms.Generator,
+	repoProcessor *pipeline.RepoProcessor,
+	llmsGenerator *generators.Generator,
 	platformMu *sync.Mutex,
 ) {
 	repoPath := repoInfo.FullName
@@ -249,7 +249,7 @@ func (o *Orchestrator) processRepository(
 		logger.Logger.WithField("repository", repoPath).Debug("Generating llms.txt")
 		llmsText := llmsGenerator.GenerateLLMsText(llmsOutput)
 		llmsPath := filepath.Join(repoOutputDir, "llms.txt")
-		if err := writeFile(llmsPath, llmsText); err != nil {
+		if err := WriteFile(llmsPath, llmsText); err != nil {
 			logger.Logger.WithError(err).WithField("file", llmsPath).Error("Failed to write llms.txt")
 
 			platformMu.Lock()
@@ -267,7 +267,7 @@ func (o *Orchestrator) processRepository(
 		logger.Logger.WithField("repository", repoPath).Debug("Generating llms-full.txt")
 		llmsFullText := llmsGenerator.GenerateLLMsFullText(llmsOutput)
 		llmsFullPath := filepath.Join(repoOutputDir, "llms-full.txt")
-		if err := writeFile(llmsFullPath, llmsFullText); err != nil {
+		if err := WriteFile(llmsFullPath, llmsFullText); err != nil {
 			logger.Logger.WithError(err).WithField("file", llmsFullPath).Error("Failed to write llms-full.txt")
 
 			platformMu.Lock()
@@ -307,7 +307,7 @@ func (o *Orchestrator) processDryRun(
 	ctx context.Context,
 	repoInfo *models.RepositoryInfo,
 	platform models.Platform,
-	repoProcessor *processor.RepoProcessor,
+	repoProcessor *pipeline.RepoProcessor,
 	platformMu *sync.Mutex,
 ) {
 	_ = ctx // unused in dry run mode
@@ -375,4 +375,40 @@ func (o *Orchestrator) simulateRepositoryProcessing(repoInfo *models.RepositoryI
 		EstimatedFiles: estimatedFiles,
 		EstimatedSize:  estimatedSize,
 	}
+}
+
+// GetTokenForPlatform gets the appropriate token for a platform
+func GetTokenForPlatform(platform models.Platform, config *models.Config, cliToken string) (string, error) {
+	// If a token was provided via CLI flag, use it for all platforms
+	if cliToken != "" {
+		return cliToken, nil
+	}
+
+	// Get platform-specific token from environment based on the detected platform
+	switch platform {
+	case models.PlatformGitLab:
+		if envToken := os.Getenv(config.GitLab.TokenEnv); envToken != "" {
+			return envToken, nil
+		}
+		return "", fmt.Errorf("GitLab token not found. Set %s environment variable or use --token flag", config.GitLab.TokenEnv)
+	case models.PlatformGitHub:
+		if envToken := os.Getenv(config.GitHub.TokenEnv); envToken != "" {
+			return envToken, nil
+		}
+		return "", fmt.Errorf("GitHub token not found. Set %s environment variable or use --token flag", config.GitHub.TokenEnv)
+	default:
+		return "", fmt.Errorf("unsupported platform: %s", platform)
+	}
+}
+
+// WriteFile writes content to a file
+func WriteFile(path, content string) error {
+	file, err := os.Create(path)
+	if err != nil {
+		return err
+	}
+	defer file.Close()
+
+	_, err = file.WriteString(content)
+	return err
 }

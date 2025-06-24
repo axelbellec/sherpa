@@ -1,4 +1,4 @@
-package vcs
+package adapters
 
 import (
 	"context"
@@ -7,8 +7,8 @@ import (
 	"regexp"
 	"strings"
 
-	"sherpa/internal/github"
-	"sherpa/internal/gitlab"
+	"sherpa/internal/adapters/github"
+	"sherpa/internal/adapters/gitlab"
 	"sherpa/pkg/models"
 )
 

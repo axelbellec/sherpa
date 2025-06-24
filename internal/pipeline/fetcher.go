@@ -1,4 +1,4 @@
-package processor
+package pipeline
 
 import (
 	"context"
@@ -10,19 +10,19 @@ import (
 	"strings"
 	"time"
 
-	"sherpa/internal/vcs"
+	"sherpa/internal/adapters"
 	"sherpa/pkg/logger"
 	"sherpa/pkg/models"
 )
 
 // RepoProcessor handles repository processing logic
 type RepoProcessor struct {
-	provider vcs.Provider
+	provider adapters.Provider
 	config   models.ProcessingConfig
 }
 
 // NewRepoProcessor creates a new repository processor
-func NewRepoProcessor(provider vcs.Provider, config models.ProcessingConfig) *RepoProcessor {
+func NewRepoProcessor(provider adapters.Provider, config models.ProcessingConfig) *RepoProcessor {
 	return &RepoProcessor{
 		provider: provider,
 		config:   config,
