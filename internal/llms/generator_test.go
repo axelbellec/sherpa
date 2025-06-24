@@ -123,11 +123,11 @@ func TestGenerator_GenerateLLMsText(t *testing.T) {
 
 		text := generator.GenerateLLMsText(output)
 		assert.NotEmpty(t, text)
-		
+
 		// Check header
 		assert.Contains(t, text, "test-repo")
 		assert.Contains(t, text, "Test repository")
-		
+
 		// Check tree structure
 		assert.Contains(t, text, "## Project Structure")
 	})
@@ -168,10 +168,9 @@ func TestGenerator_GenerateLLMsFullText(t *testing.T) {
 
 		text := generator.GenerateLLMsFullText(output)
 		assert.NotEmpty(t, text)
-		
+
 		// Should include text files
 		assert.Contains(t, text, "### README.md")
 		assert.Contains(t, text, "# Test Repository")
 	})
 }
-

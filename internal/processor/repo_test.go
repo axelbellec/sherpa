@@ -211,4 +211,3 @@ func TestRepoProcessor_ProcessRepository(t *testing.T) {
 		mockProvider.AssertExpectations(t)
 	})
 }
-

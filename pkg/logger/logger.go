@@ -10,13 +10,13 @@ var Logger *logrus.Logger
 
 func init() {
 	Logger = logrus.New()
-	
+
 	// Set output to stdout
 	Logger.SetOutput(os.Stdout)
-	
+
 	// Set default log level to Info
 	Logger.SetLevel(logrus.InfoLevel)
-	
+
 	// Use colored text formatter for better readability
 	Logger.SetFormatter(&logrus.TextFormatter{
 		ForceColors:     true,

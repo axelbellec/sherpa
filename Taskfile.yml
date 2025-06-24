@@ -1,0 +1,45 @@
+# yaml-language-server: $schema=https://taskfile.dev/schema.json
+# https://taskfile.dev/integrations/#schema
+
+version: "3"
+
+vars:
+  PROJECT_NAME:
+    sh: cat go.mod | grep module | cut -d' ' -f2
+  VERSION: 0.1.0
+  TAG: "{{.PROJECT_NAME}}@{{.VERSION}}"
+  BUILD_FLAGS: '-ldflags="-w -s"'
+
+tasks:
+  default:
+    desc: Default task
+    silent: true
+    cmds:
+      - task --list
+
+  info:
+    desc: Display project info
+    silent: true
+    cmds:
+      - echo "{{.TAG}}"
+
+  build:
+    desc: Build the project
+    silent: false
+    cmds:
+      - go build {{.BUILD_FLAGS}} -o {{.PROJECT_NAME}} main.go
+
+  install:
+    desc: Install the project
+    silent: false
+    deps:
+      - build
+    cmds:
+      - go install
+
+  tests:
+    desc: Run the tests
+    silent: false
+    cmds:
+      - go mod download
+      - go test ./... -v

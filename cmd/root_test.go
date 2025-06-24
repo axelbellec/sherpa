@@ -36,7 +36,7 @@ func TestFetchCmd(t *testing.T) {
 	t.Run("should require minimum args", func(t *testing.T) {
 		cmd := &cobra.Command{}
 		cmd.SetArgs([]string{})
-		
+
 		err := fetchCmd.Args(cmd, []string{})
 		assert.Error(t, err)
 	})
@@ -44,7 +44,7 @@ func TestFetchCmd(t *testing.T) {
 	t.Run("should accept valid args", func(t *testing.T) {
 		cmd := &cobra.Command{}
 		cmd.SetArgs([]string{"owner/repo"})
-		
+
 		err := fetchCmd.Args(cmd, []string{"owner/repo"})
 		assert.NoError(t, err)
 	})
@@ -98,14 +98,14 @@ func TestParseRepositories(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			result, err := parseRepositories(tt.args, tt.defaultPlatform)
-			
+
 			if tt.expectedError {
 				assert.Error(t, err)
 				return
 			}
-			
+
 			require.NoError(t, err)
-			
+
 			totalCount := 0
 			for _, repos := range result {
 				totalCount += len(repos)
@@ -118,10 +118,10 @@ func TestParseRepositories(t *testing.T) {
 func TestGetTokenForPlatform(t *testing.T) {
 	config := &models.Config{
 		GitLab: models.GitLabConfig{
-			TokenEnv: "GITLAB_TOKEN",
+			TokenEnv: "NONEXISTENT_TOKEN",
 		},
 		GitHub: models.GitHubConfig{
-			TokenEnv: "GITHUB_TOKEN",
+			TokenEnv: "NONEXISTENT_TOKEN",
 		},
 	}
 
@@ -160,7 +160,7 @@ func TestGetTokenForPlatform(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			token, err := getTokenForPlatform(tt.platform, config, tt.cliToken)
-			
+
 			if tt.expectedError {
 				assert.Error(t, err)
 				assert.Empty(t, token)

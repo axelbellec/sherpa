@@ -71,65 +71,65 @@ func TestFileFilter_FilterFiles(t *testing.T) {
 
 func TestFileFilter_SeparateFilesAndDirectories(t *testing.T) {
 	filter := NewFileFilter(nil, nil)
-	
+
 	input := []models.RepositoryTree{
 		{Path: "src", Type: "tree"},
 		{Path: "main.go", Type: "blob"},
 		{Path: "lib", Type: "tree"},
 		{Path: "readme.txt", Type: "blob"},
 	}
-	
+
 	files, directories := filter.SeparateFilesAndDirectories(input)
-	
+
 	expectedFiles := []models.RepositoryTree{
 		{Path: "main.go", Type: "blob"},
 		{Path: "readme.txt", Type: "blob"},
 	}
-	
+
 	expectedDirectories := []models.RepositoryTree{
 		{Path: "src", Type: "tree"},
 		{Path: "lib", Type: "tree"},
 	}
-	
+
 	assert.Equal(t, expectedFiles, files)
 	assert.Equal(t, expectedDirectories, directories)
 }
 
 func TestFileFilter_PatternMatching(t *testing.T) {
 	tests := []struct {
-		name            string
-		ignorePatterns  []string
-		includePatterns []string
-		filePath        string
-		fileType        string
+		name             string
+		ignorePatterns   []string
+		includePatterns  []string
+		filePath         string
+		fileType         string
 		shouldBeFiltered bool
 	}{
 		{
-			name:            "should filter out log files",
-			ignorePatterns: []string{"*.log"},
-			filePath:       "app.log",
-			fileType:       "blob",
+			name:             "should filter out log files",
+			ignorePatterns:   []string{"*.log"},
+			filePath:         "app.log",
+			fileType:         "blob",
 			shouldBeFiltered: true,
 		},
 		{
-			name:            "should not filter go files when not ignored",
-			ignorePatterns: []string{"*.log"},
-			filePath:       "main.go",
-			fileType:       "blob",
+			name:             "should not filter go files when not ignored",
+			ignorePatterns:   []string{"*.log"},
+			filePath:         "main.go",
+			fileType:         "blob",
 			shouldBeFiltered: false,
 		},
 		{
-			name:            "should include only go files",
-			includePatterns: []string{"*.go"},
-			filePath:       "main.go",
-			fileType:       "blob",
+			name:             "should include only go files",
+			includePatterns:  []string{"*.go"},
+			filePath:         "main.go",
+			fileType:         "blob",
 			shouldBeFiltered: false,
 		},
 		{
-			name:            "should filter out non-included files",
-			includePatterns: []string{"*.go"},
-			filePath:       "readme.txt",
-			fileType:       "blob",
+			name:             "should filter out non-included files",
+			includePatterns:  []string{"*.go"},
+			filePath:         "readme.txt",
+			fileType:         "blob",
 			shouldBeFiltered: true,
 		},
 	}
@@ -139,7 +139,7 @@ func TestFileFilter_PatternMatching(t *testing.T) {
 			filter := NewFileFilter(tt.ignorePatterns, tt.includePatterns)
 			input := []models.RepositoryTree{{Path: tt.filePath, Type: tt.fileType}}
 			result := filter.FilterFiles(input)
-			
+
 			if tt.shouldBeFiltered {
 				assert.Empty(t, result, "Expected file to be filtered out")
 			} else {

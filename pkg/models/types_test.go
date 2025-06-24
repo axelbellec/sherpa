@@ -113,12 +113,12 @@ func TestProcessingResult(t *testing.T) {
 		duration := time.Second * 5
 
 		result := &ProcessingResult{
-			Repository:  *repo,
-			Files:       files,
-			TotalFiles:  len(files),
-			TotalSize:   18,
-			Duration:    duration,
-			Errors:      []error{},
+			Repository: *repo,
+			Files:      files,
+			TotalFiles: len(files),
+			TotalSize:  18,
+			Duration:   duration,
+			Errors:     []error{},
 		}
 
 		assert.Equal(t, *repo, result.Repository)
@@ -146,10 +146,10 @@ func TestLLMsOutput(t *testing.T) {
 		}
 
 		output := &LLMsOutput{
-			Repository:    *repo,
-			TotalFiles:    1,
-			TotalSize:     12,
-			FileContents:  files,
+			Repository:   *repo,
+			TotalFiles:   1,
+			TotalSize:    12,
+			FileContents: files,
 		}
 
 		assert.Equal(t, *repo, output.Repository)

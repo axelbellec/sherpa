@@ -56,4 +56,4 @@ func (ff *FileFilter) SeparateFilesAndDirectories(entries []models.RepositoryTre
 		}
 	}
 	return files, directories
-} 
+}

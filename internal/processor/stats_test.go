@@ -17,7 +17,7 @@ func TestNewStatsCalculator(t *testing.T) {
 
 func TestStatsCalculator_GetProcessingStats(t *testing.T) {
 	calculator := NewStatsCalculator()
-	
+
 	// Test with basic processing result
 	result := &models.ProcessingResult{
 		TotalFiles: 3,
@@ -46,7 +46,7 @@ func TestStatsCalculator_GetProcessingStats(t *testing.T) {
 
 func TestStatsCalculator_GetProcessingStats_EmptyResult(t *testing.T) {
 	calculator := NewStatsCalculator()
-	
+
 	result := &models.ProcessingResult{
 		TotalFiles: 0,
 		TotalSize:  0,
@@ -69,7 +69,7 @@ func TestStatsCalculator_GetProcessingStats_EmptyResult(t *testing.T) {
 
 func TestStatsCalculator_GetProcessingStats_OnlyTextFiles(t *testing.T) {
 	calculator := NewStatsCalculator()
-	
+
 	result := &models.ProcessingResult{
 		TotalFiles: 2,
 		TotalSize:  500,
@@ -93,7 +93,7 @@ func TestStatsCalculator_GetProcessingStats_OnlyTextFiles(t *testing.T) {
 
 func TestStatsCalculator_GetProcessingStats_WithErrors(t *testing.T) {
 	calculator := NewStatsCalculator()
-	
+
 	result := &models.ProcessingResult{
 		TotalFiles: 1,
 		TotalSize:  100,

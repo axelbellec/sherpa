@@ -20,20 +20,20 @@ func NewLoader() *Loader {
 // LoadConfig loads configuration from file or returns default config
 func (l *Loader) LoadConfig(configFile string) (*models.Config, error) {
 	config := l.getDefaultConfig()
-	
+
 	if configFile != "" {
 		if _, err := os.Stat(configFile); err == nil {
 			data, err := os.ReadFile(configFile)
 			if err != nil {
 				return nil, fmt.Errorf("failed to read config file: %w", err)
 			}
-			
+
 			if err := yaml.Unmarshal(data, config); err != nil {
 				return nil, fmt.Errorf("failed to parse config file: %w", err)
 			}
 		}
 	}
-	
+
 	return config, nil
 }
 
@@ -84,19 +84,19 @@ func (l *Loader) OverrideWithFlags(config *models.Config, flags *models.CLIOptio
 			config.GitLab.BaseURL = flags.BaseURL
 		}
 	}
-	
+
 	if flags.Output != "" {
 		config.Output.Directory = flags.Output
 	}
-	
+
 	if flags.Ignore != "" {
 		config.Processing.Ignore = utils.ParsePatterns(flags.Ignore)
 	}
-	
+
 	if flags.IncludeOnly != "" {
 		config.Processing.IncludeOnly = utils.ParsePatterns(flags.IncludeOnly)
 	}
-	
+
 	return nil
 }
 
@@ -105,12 +105,12 @@ func (l *Loader) ValidateConfig(config *models.Config) error {
 	if config.Processing.MaxConcurrency <= 0 {
 		return fmt.Errorf("max_concurrency must be greater than 0")
 	}
-	
+
 	if config.Processing.MaxFileSize != "" {
 		if _, err := utils.ParseSize(config.Processing.MaxFileSize); err != nil {
 			return fmt.Errorf("invalid max_file_size: %w", err)
 		}
 	}
-	
+
 	return nil
-} 
+}

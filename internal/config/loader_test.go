@@ -22,7 +22,7 @@ func TestLoader_LoadConfig(t *testing.T) {
 		config, err := loader.LoadConfig("")
 		require.NoError(t, err)
 		assert.NotNil(t, config)
-		
+
 		// Verify default values
 		assert.Equal(t, "./sherpa-output", config.Output.Directory)
 		assert.Equal(t, "GITLAB_TOKEN", config.GitLab.TokenEnv)
@@ -60,7 +60,7 @@ processing:
 
 		config, err := loader.LoadConfig(tempFile.Name())
 		require.NoError(t, err)
-		
+
 		assert.Equal(t, "./test-output", config.Output.Directory)
 		assert.True(t, config.Output.OrganizeByDate)
 		assert.Equal(t, "CUSTOM_GITLAB_TOKEN", config.GitLab.TokenEnv)

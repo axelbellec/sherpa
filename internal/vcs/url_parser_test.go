@@ -141,8 +141,8 @@ func TestURLParserParseRepositoryURL(t *testing.T) {
 			expectedError: false,
 		},
 		{
-			name:          "should handle invalid URL as repo name",
-			url:           "invalid-url",
+			name: "should handle invalid URL as repo name",
+			url:  "invalid-url",
 			expectedRepo: &models.RepositoryInfo{
 				FullName: "invalid-url",
 				Owner:    "",
@@ -163,8 +163,8 @@ func TestURLParserParseRepositoryURL(t *testing.T) {
 			expectedError: true,
 		},
 		{
-			name:          "should handle empty URL as default repo",
-			url:           "",
+			name: "should handle empty URL as default repo",
+			url:  "",
 			expectedRepo: &models.RepositoryInfo{
 				FullName: "",
 				Owner:    "",
@@ -479,8 +479,8 @@ func TestParseRepositoryURL(t *testing.T) {
 			expectedError: false,
 		},
 		{
-			name: "should parse owner/repo format",
-			url:  "owner/repo",
+			name:            "should parse owner/repo format",
+			url:             "owner/repo",
 			defaultPlatform: models.PlatformGitHub,
 			expectedRepo: &models.RepositoryInfo{
 				FullName: "owner/repo",
@@ -492,8 +492,8 @@ func TestParseRepositoryURL(t *testing.T) {
 			expectedError: false,
 		},
 		{
-			name:          "should handle empty URL by creating default repo info",
-			url:           "",
+			name: "should handle empty URL by creating default repo info",
+			url:  "",
 			expectedRepo: &models.RepositoryInfo{
 				FullName: "",
 				Owner:    "",

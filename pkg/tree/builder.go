@@ -22,26 +22,26 @@ func (b *Builder) BuildProjectTree(files []models.FileInfo) []models.TreeNode {
 	if len(files) == 0 {
 		return []models.TreeNode{}
 	}
-	
+
 	root := &models.TreeNode{
 		Name:     "",
 		Path:     "",
 		IsDir:    true,
 		Children: []models.TreeNode{},
 	}
-	
+
 	// Build the tree structure
 	for _, file := range files {
 		if file.Path == "" {
 			continue
 		}
-		
+
 		b.addFileToTree(root, file)
 	}
-	
+
 	// Sort children recursively
 	b.sortTreeNodesRecursive(root)
-	
+
 	return root.Children
 }
 
@@ -49,11 +49,11 @@ func (b *Builder) BuildProjectTree(files []models.FileInfo) []models.TreeNode {
 func (b *Builder) addFileToTree(root *models.TreeNode, file models.FileInfo) {
 	parts := strings.Split(file.Path, "/")
 	current := root
-	
+
 	// Navigate/create path to file
 	for i, part := range parts {
 		isLastPart := i == len(parts)-1
-		
+
 		// Find existing child or create new one
 		var found *models.TreeNode
 		for j := range current.Children {
@@ -62,7 +62,7 @@ func (b *Builder) addFileToTree(root *models.TreeNode, file models.FileInfo) {
 				break
 			}
 		}
-		
+
 		if found == nil {
 			// Create new node
 			newNode := models.TreeNode{
@@ -71,11 +71,11 @@ func (b *Builder) addFileToTree(root *models.TreeNode, file models.FileInfo) {
 				IsDir: !isLastPart || file.IsDir,
 				Size:  0,
 			}
-			
+
 			if isLastPart && !file.IsDir {
 				newNode.Size = file.Size
 			}
-			
+
 			current.Children = append(current.Children, newNode)
 			found = &current.Children[len(current.Children)-1]
 		} else if isLastPart && !file.IsDir {
@@ -83,7 +83,7 @@ func (b *Builder) addFileToTree(root *models.TreeNode, file models.FileInfo) {
 			found.Size = file.Size
 			found.IsDir = false
 		}
-		
+
 		current = found
 	}
 }
@@ -93,20 +93,20 @@ func (b *Builder) sortTreeNodesRecursive(node *models.TreeNode) {
 	if len(node.Children) == 0 {
 		return
 	}
-	
+
 	// Sort directories first, then files, both alphabetically
 	sort.Slice(node.Children, func(i, j int) bool {
 		a, b := &node.Children[i], &node.Children[j]
-		
+
 		// Directories come before files
 		if a.IsDir != b.IsDir {
 			return a.IsDir
 		}
-		
+
 		// Within same type, sort alphabetically
 		return a.Name < b.Name
 	})
-	
+
 	// Recursively sort children
 	for i := range node.Children {
 		b.sortTreeNodesRecursive(&node.Children[i])
@@ -137,11 +137,11 @@ func (b *Builder) WriteProjectTreeUnix(nodes []models.TreeNode) string {
 	var sb strings.Builder
 	sb.WriteString(".\n")
 	b.writeProjectTreeUnixRecursive(&sb, nodes, "", true)
-	
+
 	// Count directories and files
 	dirCount, fileCount := b.countDirectoriesAndFiles(nodes)
 	sb.WriteString(fmt.Sprintf("\n%d directories, %d files\n", dirCount, fileCount))
-	
+
 	return sb.String()
 }
 
@@ -149,7 +149,7 @@ func (b *Builder) WriteProjectTreeUnix(nodes []models.TreeNode) string {
 func (b *Builder) writeProjectTreeUnixRecursive(sb *strings.Builder, nodes []models.TreeNode, prefix string, isLast bool) {
 	for i, node := range nodes {
 		isLastChild := i == len(nodes)-1
-		
+
 		// Choose the appropriate prefix
 		var currentPrefix, nextPrefix string
 		if isLastChild {
@@ -159,7 +159,7 @@ func (b *Builder) writeProjectTreeUnixRecursive(sb *strings.Builder, nodes []mod
 			currentPrefix = prefix + "├── "
 			nextPrefix = prefix + "│   "
 		}
-		
+
 		// Write the current node
 		if node.IsDir {
 			sb.WriteString(fmt.Sprintf("%s%s\n", currentPrefix, node.Name))
@@ -186,4 +186,4 @@ func (b *Builder) countDirectoriesAndFiles(nodes []models.TreeNode) (dirCount, f
 		}
 	}
 	return dirCount, fileCount
-} 
+}

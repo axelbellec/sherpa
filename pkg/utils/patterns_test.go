@@ -60,7 +60,7 @@ func TestParsePatterns(t *testing.T) {
 func TestPatternMatcher(t *testing.T) {
 	t.Run("should handle ignore patterns", func(t *testing.T) {
 		pm := NewPatternMatcher([]string{"*.log", "node_modules/"}, []string{})
-		
+
 		assert.True(t, pm.ShouldIgnore("app.log"))
 		assert.True(t, pm.ShouldIgnore("node_modules/package/index.js"))
 		assert.False(t, pm.ShouldIgnore("src/main.go"))
@@ -68,7 +68,7 @@ func TestPatternMatcher(t *testing.T) {
 
 	t.Run("should handle include patterns", func(t *testing.T) {
 		pm := NewPatternMatcher([]string{}, []string{"*.go", "*.js"})
-		
+
 		assert.True(t, pm.ShouldInclude("main.go"))
 		assert.True(t, pm.ShouldInclude("app.js"))
 		assert.False(t, pm.ShouldInclude("README.md"))
@@ -76,9 +76,8 @@ func TestPatternMatcher(t *testing.T) {
 
 	t.Run("should include all when no patterns specified", func(t *testing.T) {
 		pm := NewPatternMatcher([]string{}, []string{})
-		
+
 		assert.True(t, pm.ShouldInclude("any.file"))
 		assert.False(t, pm.ShouldIgnore("any.file"))
 	})
 }
-

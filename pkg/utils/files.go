@@ -14,13 +14,13 @@ func FormatBytes(bytes int64) string {
 	if bytes < unit {
 		return fmt.Sprintf("%d B", bytes)
 	}
-	
+
 	div, exp := int64(unit), 0
 	for n := bytes / unit; n >= unit; n /= unit {
 		div *= unit
 		exp++
 	}
-	
+
 	units := []string{"KB", "MB", "GB", "TB"}
 	return fmt.Sprintf("%.1f %s", float64(bytes)/float64(div), units[exp])
 }
@@ -28,7 +28,7 @@ func FormatBytes(bytes int64) string {
 // ParseSize parses size strings like "1MB", "500KB" into bytes
 func ParseSize(sizeStr string) (int64, error) {
 	sizeStr = strings.TrimSpace(strings.ToUpper(sizeStr))
-	
+
 	// Define size multipliers
 	multipliers := map[string]int64{
 		"B":  1,
@@ -36,26 +36,26 @@ func ParseSize(sizeStr string) (int64, error) {
 		"MB": 1024 * 1024,
 		"GB": 1024 * 1024 * 1024,
 	}
-	
+
 	// Extract number and unit
 	re := regexp.MustCompile(`^(\d+(?:\.\d+)?)\s*([KMGT]?B)$`)
 	matches := re.FindStringSubmatch(sizeStr)
-	
+
 	if len(matches) != 3 {
 		return 0, fmt.Errorf("invalid size format: %s", sizeStr)
 	}
-	
+
 	size, err := strconv.ParseFloat(matches[1], 64)
 	if err != nil {
 		return 0, fmt.Errorf("invalid size number: %s", matches[1])
 	}
-	
+
 	unit := matches[2]
 	multiplier, exists := multipliers[unit]
 	if !exists {
 		return 0, fmt.Errorf("unknown size unit: %s", unit)
 	}
-	
+
 	return int64(size * float64(multiplier)), nil
 }
 
@@ -73,12 +73,12 @@ func IsTextFile(content string) bool {
 	if len(content) == 0 {
 		return true
 	}
-	
+
 	// Check for null bytes (binary indicator)
 	if strings.Contains(content, "\x00") {
 		return false
 	}
-	
+
 	// Check for high ratio of non-printable characters
 	nonPrintable := 0
 	for _, r := range content {
@@ -86,12 +86,12 @@ func IsTextFile(content string) bool {
 			nonPrintable++
 		}
 	}
-	
+
 	// If more than 20% non-printable, consider it binary
 	if len(content) > 0 && float64(nonPrintable)/float64(len(content)) > 0.2 {
 		return false
 	}
-	
+
 	return true
 }
 
@@ -108,4 +108,4 @@ func SanitizeRepoName(repoPath string) string {
 	sanitized = strings.ReplaceAll(sanitized, "|", "_")
 	sanitized = strings.ReplaceAll(sanitized, "\"", "_")
 	return sanitized
-} 
+}

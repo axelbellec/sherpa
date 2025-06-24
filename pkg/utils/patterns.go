@@ -35,7 +35,7 @@ func (pm *PatternMatcher) ShouldInclude(filePath string) bool {
 	if len(pm.includePatterns) == 0 {
 		return true
 	}
-	
+
 	for _, pattern := range pm.includePatterns {
 		if pm.matchesPattern(filePath, pattern) {
 			return true
@@ -50,12 +50,12 @@ func (pm *PatternMatcher) matchesPattern(filePath, pattern string) bool {
 	if matched, err := filepath.Match(pattern, filepath.Base(filePath)); err == nil && matched {
 		return true
 	}
-	
+
 	// Handle full path patterns
 	if matched, err := filepath.Match(pattern, filePath); err == nil && matched {
 		return true
 	}
-	
+
 	// Handle directory patterns (ending with /)
 	if strings.HasSuffix(pattern, "/") {
 		dirPattern := strings.TrimSuffix(pattern, "/")
@@ -63,12 +63,12 @@ func (pm *PatternMatcher) matchesPattern(filePath, pattern string) bool {
 			return true
 		}
 	}
-	
+
 	// Handle substring matching for simple patterns
 	if strings.Contains(filePath, pattern) {
 		return true
 	}
-	
+
 	return false
 }
 
@@ -77,16 +77,16 @@ func ParsePatterns(patternStr string) []string {
 	if patternStr == "" {
 		return nil
 	}
-	
+
 	patterns := strings.Split(patternStr, ",")
 	var result []string
-	
+
 	for _, pattern := range patterns {
 		pattern = strings.TrimSpace(pattern)
 		if pattern != "" {
 			result = append(result, pattern)
 		}
 	}
-	
+
 	return result
-} 
+}

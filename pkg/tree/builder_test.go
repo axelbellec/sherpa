@@ -40,7 +40,7 @@ func TestBuilder_BuildProjectTree(t *testing.T) {
 		files := []models.FileInfo{
 			{Path: "single.txt", Size: 50},
 		}
-		
+
 		nodes := builder.BuildProjectTree(files)
 		assert.Len(t, nodes, 1)
 		assert.Equal(t, "single.txt", nodes[0].Name)
@@ -54,10 +54,10 @@ func TestBuilder_BuildProjectTree(t *testing.T) {
 			{Path: "a/b/shallow.txt", Size: 200},
 			{Path: "a/file.txt", Size: 150},
 		}
-		
+
 		nodes := builder.BuildProjectTree(files)
 		assert.Len(t, nodes, 1) // Only 'a' directory at root
-		
+
 		aNode := nodes[0]
 		assert.Equal(t, "a", aNode.Name)
 		assert.True(t, aNode.IsDir)
@@ -70,7 +70,7 @@ func TestBuilder_BuildProjectTree(t *testing.T) {
 			{Path: "test_helper.go", Size: 150},
 			{Path: "test/unit.go", Size: 200},
 		}
-		
+
 		nodes := builder.BuildProjectTree(files)
 		assert.Len(t, nodes, 3) // test.go, test_helper.go, test/
 	})
@@ -90,10 +90,10 @@ func TestBuilder_WriteProjectTreeUnix(t *testing.T) {
 
 		nodes := builder.BuildProjectTree(files)
 		tree := builder.WriteProjectTreeUnix(nodes)
-		
+
 		// Should start with root
 		assert.Contains(t, tree, ".")
-		
+
 		// Should contain all files and directories
 		assert.Contains(t, tree, "package.json")
 		assert.Contains(t, tree, "src")
@@ -133,7 +133,7 @@ func TestBuilder_WriteProjectTree(t *testing.T) {
 
 		nodes := builder.BuildProjectTree(files)
 		tree := builder.WriteProjectTree(nodes, "")
-		
+
 		assert.Contains(t, tree, "README.md")
 		assert.Contains(t, tree, "src/")
 		assert.Contains(t, tree, "main.go")
@@ -145,7 +145,7 @@ func splitLines(tree string) []string {
 	if tree == "" {
 		return []string{}
 	}
-	
+
 	lines := []string{}
 	current := ""
 	for _, char := range tree {
