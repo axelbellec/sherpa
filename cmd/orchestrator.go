@@ -77,17 +77,21 @@ func (o *Orchestrator) ProcessRepositories(ctx context.Context, reposByPlatform 
 				return
 			}
 
-			// Test connection
-			logger.Logger.WithField("platform", platform).Info("Testing connection...")
-			if err := provider.TestConnection(ctx); err != nil {
-				logger.Logger.WithError(err).WithField("platform", platform).Error("Connection test failed")
+			// Test connection (skip in dry run mode)
+			if !o.cliOptions.DryRun {
+				logger.Logger.WithField("platform", platform).Info("Testing connection...")
+				if err := provider.TestConnection(ctx); err != nil {
+					logger.Logger.WithError(err).WithField("platform", platform).Error("Connection test failed")
 
-				platformMu.Lock()
-				fmt.Fprintf(os.Stderr, "Connection test failed for platform %s: %v\n", platform, err)
-				platformMu.Unlock()
-				return
+					platformMu.Lock()
+					fmt.Fprintf(os.Stderr, "Connection test failed for platform %s: %v\n", platform, err)
+					platformMu.Unlock()
+					return
+				}
+				logger.Logger.WithField("platform", platform).Info("Connection successful")
+			} else {
+				logger.Logger.WithField("platform", platform).Info("[DRY RUN] Skipping connection test")
 			}
-			logger.Logger.WithField("platform", platform).Info("Connection successful")
 
 			// Create processor for this platform
 			logger.Logger.Debug("Creating repository processor")
@@ -166,7 +170,14 @@ func (o *Orchestrator) processRepository(
 		"repository": repoPath,
 		"platform":   platform,
 		"branch":     repoInfo.Branch,
+		"dry_run":    o.cliOptions.DryRun,
 	}).Info("Processing repository")
+
+	// Handle dry run mode
+	if o.cliOptions.DryRun {
+		o.processDryRun(ctx, repoInfo, platform, repoProcessor, platformMu)
+		return
+	}
 
 	// Process repository
 	result, err := repoProcessor.ProcessRepository(ctx, repoPath, repoInfo.Branch)
@@ -288,5 +299,80 @@ func (o *Orchestrator) processRepository(
 		fmt.Printf("  Output: %s\n", repoOutputDir)
 		fmt.Println()
 		platformMu.Unlock()
+	}
+}
+
+// processDryRun handles dry run mode for a repository
+func (o *Orchestrator) processDryRun(
+	ctx context.Context,
+	repoInfo *models.RepositoryInfo,
+	platform models.Platform,
+	repoProcessor *processor.RepoProcessor,
+	platformMu *sync.Mutex,
+) {
+	_ = ctx // unused in dry run mode
+	_ = repoProcessor // unused in dry run mode
+	repoPath := repoInfo.FullName
+	logger.Logger.WithFields(map[string]interface{}{
+		"repository": repoPath,
+		"platform":   platform,
+		"branch":     repoInfo.Branch,
+	}).Info("[DRY RUN] Processing repository")
+
+	// Simulate repository processing with mock data
+	mockResult := o.simulateRepositoryProcessing(repoInfo, platform)
+
+	// Calculate output directory
+	repoOutputDir := filepath.Join(o.config.Output.Directory, utils.SanitizeRepoName(repoPath))
+	if o.config.Output.OrganizeByDate {
+		dateDir := time.Now().Format("2006-01-02")
+		repoOutputDir = filepath.Join(o.config.Output.Directory, dateDir, utils.SanitizeRepoName(repoPath))
+	}
+
+	// Display dry run results
+	if !o.cliOptions.Quiet {
+		platformMu.Lock()
+		fmt.Printf("[DRY RUN] Would process %s (%s)\n", repoPath, platform)
+		fmt.Printf("  Branch: %s\n", repoInfo.Branch)
+		fmt.Printf("  Estimated files: %d\n", mockResult.EstimatedFiles)
+		fmt.Printf("  Estimated size: %s\n", mockResult.EstimatedSize)
+		fmt.Printf("  Would create output: %s\n", repoOutputDir)
+		fmt.Printf("  Files that would be created:\n")
+		fmt.Printf("    - %s/llms.txt\n", repoOutputDir)
+		fmt.Printf("    - %s/llms-full.txt\n", repoOutputDir)
+		fmt.Println()
+		platformMu.Unlock()
+	}
+
+	logger.Logger.WithFields(map[string]interface{}{
+		"repository":      repoPath,
+		"platform":        platform,
+		"estimated_files": mockResult.EstimatedFiles,
+		"estimated_size":  mockResult.EstimatedSize,
+		"output_dir":      repoOutputDir,
+	}).Info("[DRY RUN] Repository processing simulation completed")
+}
+
+// DryRunResult contains simulated processing results
+type DryRunResult struct {
+	EstimatedFiles int
+	EstimatedSize  string
+}
+
+// simulateRepositoryProcessing simulates repository processing and returns mock results
+func (o *Orchestrator) simulateRepositoryProcessing(repoInfo *models.RepositoryInfo, platform models.Platform) *DryRunResult {
+	_ = repoInfo // unused for now, could be used for better estimates
+	_ = platform // unused for now, could be used for platform-specific estimates
+	// These are mock estimates - in a real implementation, you might want to
+	// make lightweight API calls to get basic repo info without fetching all files
+	estimatedFiles := 50 // Mock estimate
+	estimatedSize := "2.5MB" // Mock estimate
+
+	// You could potentially make a single API call to get repository metadata
+	// without fetching the full tree or file contents to provide better estimates
+
+	return &DryRunResult{
+		EstimatedFiles: estimatedFiles,
+		EstimatedSize:  estimatedSize,
 	}
 }

@@ -30,6 +30,7 @@ var (
 	defaultPlatform     string
 	maxReposConcurrency int
 	maxFilesConcurrency int
+	dryRun              bool
 )
 
 // RootCmd represents the base command when called without any subcommands
@@ -94,7 +95,11 @@ Examples:
   sherpa fetch platform-api --token $GITLAB_TOKEN --output ./contexts
 
   # Use ignore patterns
-  sherpa fetch platform-api --token $GITLAB_TOKEN --ignore "*.test.go,vendor/,*.log"`,
+  sherpa fetch platform-api --token $GITLAB_TOKEN --ignore "*.test.go,vendor/,*.log"
+  
+  # Preview operations with dry run
+  sherpa fetch owner/repo --dry-run --token $GITHUB_TOKEN
+  sherpa fetch repo1 repo2 repo3 --dry-run --token $GITHUB_TOKEN`,
 	Args: cobra.MinimumNArgs(1),
 	RunE: runFetch,
 }
@@ -114,6 +119,7 @@ func init() {
 	fetchCmd.Flags().BoolVarP(&quiet, "quiet", "q", false, "Suppress progress output")
 	fetchCmd.Flags().IntVarP(&maxReposConcurrency, "max-repos-concurrency", "m", 5, "Maximum number of repositories to process concurrently")
 	fetchCmd.Flags().IntVar(&maxFilesConcurrency, "max-files-concurrency", 20, "Maximum number of files to fetch concurrently per repository")
+	fetchCmd.Flags().BoolVar(&dryRun, "dry-run", false, "Preview operations without making API calls or creating files")
 }
 
 // runFetch executes the fetch command
@@ -142,6 +148,7 @@ func runFetch(cmd *cobra.Command, args []string) error {
 		MaxFilesConcurrency: maxFilesConcurrency,
 		Verbose:             verbose,
 		Quiet:               quiet,
+		DryRun:              dryRun,
 	}
 
 	// Load and configure

@@ -143,4 +143,5 @@ type CLIOptions struct {
 	MaxFilesConcurrency int
 	Verbose             bool
 	Quiet               bool
+	DryRun              bool
 }
