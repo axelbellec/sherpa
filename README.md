@@ -161,6 +161,79 @@ sherpa-output/
     └── llms-full.txt
 ```
 
+## Architecture
+
+Sherpa follows a modular architecture with clear separation of concerns:
+
+### Core Components
+
+- **Orchestration Layer** (`internal/orchestration/coordinator.go`): Central coordinator that manages the entire processing pipeline
+- **Adapters** (`internal/adapters/`): Platform-specific clients for GitHub and GitLab APIs
+- **Pipeline** (`internal/pipeline/`): Repository fetching, filtering, and processing logic
+- **Generators** (`internal/generators/`): LLM output file generation
+
+### Token Management
+
+The orchestration layer handles platform-specific token retrieval:
+- CLI token (`--token` flag) takes precedence and works for all platforms
+- Falls back to platform-specific environment variables (`GITHUB_TOKEN`, `GITLAB_TOKEN`)
+- Validates tokens through connection testing before processing
+
+### Processing Flow
+
+```mermaid
+graph TD
+    A[CLI Input] --> B[URL Parser]
+    B --> C{Platform Detection}
+    C -->|GitHub| D[GitHub Repos]
+    C -->|GitLab| E[GitLab Repos]
+    
+    D --> F[Orchestrator]
+    E --> F
+    
+    F --> G[Token Resolution]
+    G -->|CLI Token| H[Use CLI Token]
+    G -->|No CLI Token| I{Platform Check}
+    I -->|GitHub| J[Get GITHUB_TOKEN]
+    I -->|GitLab| K[Get GITLAB_TOKEN]
+    
+    H --> L[Create Platform Provider]
+    J --> L
+    K --> L
+    
+    L --> M[Connection Test]
+    M --> N{Dry Run?}
+    N -->|Yes| O[Simulate Processing]
+    N -->|No| P[Concurrent Processing]
+    
+    P --> Q[Platform Level Concurrency]
+    Q --> R[Repository Level Concurrency]
+    R --> S[File Level Concurrency]
+    
+    S --> T[Pipeline Processing]
+    T --> U[Filter Files]
+    U --> V[Fetch File Contents]
+    V --> W[Generate Statistics]
+    
+    W --> X[LLM Generator]
+    X --> Y[Generate llms.txt]
+    X --> Z[Generate llms-full.txt]
+    
+    Y --> AA[Write Output Files]
+    Z --> AA
+    O --> BB[Display Dry Run Results]
+    AA --> CC[Success Report]
+```
+
+1. **Repository Parsing**: URLs are parsed to determine platform (GitHub/GitLab) and extract repository information
+2. **Token Resolution**: Platform-specific tokens are retrieved from CLI flags or environment variables
+3. **Provider Creation**: Platform adapters are instantiated with appropriate base URLs and tokens
+4. **Concurrent Processing**: Three-tier concurrency model processes repositories efficiently:
+   - **Platform Level**: GitHub and GitLab repositories processed simultaneously
+   - **Repository Level**: Multiple repositories per platform processed concurrently (default: 5)
+   - **File Level**: Multiple files per repository fetched in parallel (default: 20)
+5. **Output Generation**: LLM-ready files (`llms.txt` and `llms-full.txt`) generated concurrently
+
 ## Performance
 
 Sherpa is built for speed with three-tier concurrent processing:
