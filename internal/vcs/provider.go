@@ -219,9 +219,7 @@ func parseGitHubURL(u *url.URL, original string) (*models.RepositoryInfo, error)
 	repo := pathParts[1]
 
 	// Remove .git suffix if present
-	if strings.HasSuffix(repo, ".git") {
-		repo = strings.TrimSuffix(repo, ".git")
-	}
+	repo = strings.TrimSuffix(repo, ".git")
 
 	return &models.RepositoryInfo{
 		Platform: models.PlatformGitHub,
@@ -243,9 +241,7 @@ func parseGitLabURL(u *url.URL, original string) (*models.RepositoryInfo, error)
 	fullPath := strings.Join(pathParts, "/")
 
 	// Remove .git suffix if present
-	if strings.HasSuffix(fullPath, ".git") {
-		fullPath = strings.TrimSuffix(fullPath, ".git")
-	}
+	fullPath = strings.TrimSuffix(fullPath, ".git")
 
 	return &models.RepositoryInfo{
 		Platform: models.PlatformGitLab,
