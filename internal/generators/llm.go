@@ -149,9 +149,11 @@ func (g *Generator) GenerateLLMsFullText(output *models.LLMsOutput) string {
 			continue
 		}
 
-		// Add warning for large files
+		// Add header with warning for large files
 		if file.Size > WarningFileSize {
 			sb.WriteString(fmt.Sprintf("### %s (Large file: %s)\n", file.Path, formatBytes(file.Size)))
+		} else {
+			sb.WriteString(fmt.Sprintf("### %s\n", file.Path))
 		}
 
 		// Determine file extension for syntax highlighting

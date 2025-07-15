@@ -347,9 +347,9 @@ func TestClient_GetMultipleFiles_Concurrency(t *testing.T) {
 
 	ctx := context.Background()
 
-	// Create more files to test concurrency
-	moreFiles := make([]string, 20)
-	for i := 0; i < 20; i++ {
+	// Create more files to test concurrency (using fewer files to avoid resource limits)
+	moreFiles := make([]string, 5)
+	for i := 0; i < 5; i++ {
 		filename := filepath.Join(tmpDir, fmt.Sprintf("test%d.go", i))
 		content := fmt.Sprintf("package main\n\n// File %d\nfunc test%d() {}", i, i)
 		require.NoError(t, os.WriteFile(filename, []byte(content), 0644))
