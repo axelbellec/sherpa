@@ -53,6 +53,7 @@ type Platform string
 const (
 	PlatformGitLab Platform = "gitlab"
 	PlatformGitHub Platform = "github"
+	PlatformLocal  Platform = "local"
 )
 
 // Repository represents a VCS repository

@@ -14,7 +14,7 @@ Just like a mountain sherpa guides climbers through challenging terrain, Sherpa 
 
 ## Features
 
-- 🚀 **Multi-Platform Support** - Works seamlessly with GitHub, GitLab, and self-hosted instances
+- 🚀 **Multi-Platform Support** - Works seamlessly with GitHub, GitLab, self-hosted instances, and local folders
 - ⚡ **High-Performance Concurrent Processing** - Process multiple repositories and files simultaneously
 - 🔐 **Private Repository Access** - Secure token-based authentication
 - 📁 **Smart File Processing** - Intelligent filtering with built-in `.gitignore` support
@@ -62,6 +62,10 @@ sherpa fetch owner/repo --token $GITHUB_TOKEN
 # GitLab repository
 sherpa fetch https://gitlab.com/owner/repo --token $GITLAB_TOKEN
 
+# Local folder
+sherpa fetch /path/to/my/project
+sherpa fetch ./src/backend
+
 # Multiple repositories with high concurrency
 sherpa fetch repo1 repo2 repo3 \
   --max-repos-concurrency 10 \
@@ -80,6 +84,9 @@ sherpa fetch microsoft/vscode --token $GITHUB_TOKEN --output ./context
 # Fetch a GitLab repository with custom ignore patterns
 sherpa fetch gitlab-org/gitlab --token $GITLAB_TOKEN \
   --ignore "*.test.js,node_modules/,*.log"
+
+# Fetch a local folder
+sherpa fetch ~/my-projects/web-app --output ./context
 ```
 
 ### Multiple Repositories
@@ -91,6 +98,13 @@ sherpa fetch \
   vercel/next.js \
   microsoft/typescript \
   --max-repos-concurrency 8 \
+  --token $GITHUB_TOKEN
+
+# Mix remote repositories and local folders
+sherpa fetch \
+  facebook/react \
+  ~/my-projects/backend \
+  ./frontend \
   --token $GITHUB_TOKEN
 ```
 

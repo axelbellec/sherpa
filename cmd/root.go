@@ -53,12 +53,13 @@ Supported platforms:
 var fetchCmd = &cobra.Command{
 	Use:   "fetch [repository...]",
 	Short: "Fetch repository and generate LLMs context files",
-	Long: `Fetch one or more repositories from GitLab or GitHub and generate comprehensive llms-full.txt files.
+	Long: `Fetch one or more repositories from GitLab, GitHub, or local folders and generate comprehensive llms-full.txt files.
 
 Platform Detection:
-  Sherpa automatically detects the platform based on the repository URL:
+  Sherpa automatically detects the platform based on the repository URL or path:
   - GitHub: https://github.com/owner/repo or owner/repo
   - GitLab: https://gitlab.com/owner/repo or bare repo names (default)
+  - Local: /path/to/folder, ./relative/path, or ~/home/path
 
 Branch Targeting:
   Specify a target branch using URL fragment syntax (#branch):
@@ -67,6 +68,7 @@ Branch Targeting:
   - owner/repo#main
   
   If no branch is specified, the repository's default branch is used.
+  Note: Branch targeting is not applicable to local folders.
 
 Examples:
   # GitHub repositories
@@ -77,6 +79,11 @@ Examples:
   sherpa fetch https://gitlab.com/owner/repo --token $GITLAB_TOKEN
   sherpa fetch platform-api --token $GITLAB_TOKEN
 
+  # Local folders
+  sherpa fetch /path/to/my/project
+  sherpa fetch ./src/backend
+  sherpa fetch ~/my-projects/frontend
+
   # Branch targeting
   sherpa fetch owner/repo#feature-branch --token $GITHUB_TOKEN
   sherpa fetch https://github.com/user/repo1#main https://gitlab.com/group/repo2#develop
@@ -86,7 +93,7 @@ Examples:
   sherpa fetch owner/repo --default-platform gitlab
 
   # Mixed platforms with environment tokens
-  sherpa fetch owner/repo platform-api
+  sherpa fetch owner/repo platform-api ./local-project
 
   # Use configuration file
   sherpa fetch platform-api --config .sherpa.yml
@@ -99,7 +106,7 @@ Examples:
   
   # Preview operations with dry run
   sherpa fetch owner/repo --dry-run --token $GITHUB_TOKEN
-  sherpa fetch repo1 repo2 repo3 --dry-run --token $GITHUB_TOKEN`,
+  sherpa fetch repo1 repo2 repo3 ./local-folder --dry-run --token $GITHUB_TOKEN`,
 	Args: cobra.MinimumNArgs(1),
 	RunE: runFetch,
 }

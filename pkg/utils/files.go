@@ -2,6 +2,8 @@ package utils
 
 import (
 	"fmt"
+	"io"
+	"os"
 	"regexp"
 	"strconv"
 	"strings"
@@ -108,4 +110,42 @@ func SanitizeRepoName(repoPath string) string {
 	sanitized = strings.ReplaceAll(sanitized, "|", "_")
 	sanitized = strings.ReplaceAll(sanitized, "\"", "_")
 	return sanitized
+}
+
+// IsBinaryFile checks if a file is binary by reading the first few bytes
+func IsBinaryFile(filePath string) bool {
+	file, err := os.Open(filePath)
+	if err != nil {
+		return true // If we can't read it, assume it's binary
+	}
+	defer file.Close()
+
+	// Read first 8192 bytes (same as git does)
+	buffer := make([]byte, 8192)
+	n, err := file.Read(buffer)
+	if err != nil && err != io.EOF {
+		return true // If we can't read it, assume it's binary
+	}
+
+	// Check for null bytes (binary indicator)
+	for i := 0; i < n; i++ {
+		if buffer[i] == 0 {
+			return true
+		}
+	}
+
+	// Check for high ratio of non-printable characters
+	nonPrintable := 0
+	for i := 0; i < n; i++ {
+		if !unicode.IsPrint(rune(buffer[i])) && !unicode.IsSpace(rune(buffer[i])) {
+			nonPrintable++
+		}
+	}
+
+	// If more than 20% non-printable, consider it binary
+	if n > 0 && float64(nonPrintable)/float64(n) > 0.2 {
+		return true
+	}
+
+	return false
 }

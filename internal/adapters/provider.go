@@ -4,11 +4,14 @@ import (
 	"context"
 	"fmt"
 	"net/url"
+	"os"
+	"path/filepath"
 	"regexp"
 	"strings"
 
 	"sherpa/internal/adapters/github"
 	"sherpa/internal/adapters/gitlab"
+	"sherpa/internal/adapters/local"
 	"sherpa/pkg/models"
 )
 
@@ -118,6 +121,44 @@ func (p *GitHubProvider) TestConnection(ctx context.Context) error {
 	return p.client.TestConnection(ctx)
 }
 
+// LocalProvider wraps the local client to implement the Provider interface
+type LocalProvider struct {
+	client *local.Client
+}
+
+// NewLocalProvider creates a new local provider
+func NewLocalProvider(folderPath string) (*LocalProvider, error) {
+	client, err := local.NewClient(folderPath)
+	if err != nil {
+		return nil, err
+	}
+	return &LocalProvider{client: client}, nil
+}
+
+func (p *LocalProvider) GetRepository(ctx context.Context, repoPath string) (*models.Repository, error) {
+	return p.client.GetRepository(ctx, repoPath)
+}
+
+func (p *LocalProvider) GetRepositoryTree(ctx context.Context, repoPath, branch string) ([]models.RepositoryTree, error) {
+	return p.client.GetRepositoryTree(ctx, repoPath, branch)
+}
+
+func (p *LocalProvider) GetFileContent(ctx context.Context, repoPath, filePath, branch string) (string, error) {
+	return p.client.GetFileContent(ctx, repoPath, filePath, branch)
+}
+
+func (p *LocalProvider) GetFileInfo(ctx context.Context, repoPath, filePath, branch string) (*models.FileInfo, error) {
+	return p.client.GetFileInfo(ctx, repoPath, filePath, branch)
+}
+
+func (p *LocalProvider) GetMultipleFiles(ctx context.Context, repoPath string, filePaths []string, branch string, maxConcurrency int) ([]models.FileInfo, error) {
+	return p.client.GetMultipleFiles(ctx, repoPath, filePaths, branch, maxConcurrency)
+}
+
+func (p *LocalProvider) TestConnection(ctx context.Context) error {
+	return p.client.TestConnection(ctx)
+}
+
 // ParseRepositoryURL parses a repository URL or path and returns repository information
 func ParseRepositoryURL(input string, defaultPlatform models.Platform) (*models.RepositoryInfo, error) {
 	input = strings.TrimSpace(input)
@@ -130,6 +171,29 @@ func ParseRepositoryURL(input string, defaultPlatform models.Platform) (*models.
 			input = parts[0]
 			branch = parts[1]
 		}
+	}
+
+	// Handle local paths (check if path exists on filesystem)
+	if isLocalPath(input) {
+		absPath, err := filepath.Abs(input)
+		if err != nil {
+			return nil, fmt.Errorf("invalid local path: %w", err)
+		}
+		
+		// Validate that the path exists and is a directory
+		if info, err := os.Stat(absPath); err != nil || !info.IsDir() {
+			return nil, fmt.Errorf("local path does not exist or is not a directory: %s", input)
+		}
+
+		folderName := filepath.Base(absPath)
+		return &models.RepositoryInfo{
+			Platform: models.PlatformLocal,
+			Owner:    "local",
+			Name:     folderName,
+			FullName: absPath,
+			URL:      fmt.Sprintf("file://%s", absPath),
+			Branch:   branch,
+		}, nil
 	}
 
 	// Handle URLs
@@ -183,6 +247,25 @@ func ParseRepositoryURL(input string, defaultPlatform models.Platform) (*models.
 		FullName: input,
 		Branch:   branch,
 	}, nil
+}
+
+// isLocalPath checks if the input appears to be a local filesystem path
+func isLocalPath(input string) bool {
+	// Check for common local path indicators
+	if strings.HasPrefix(input, "/") || 
+		strings.HasPrefix(input, "./") || 
+		strings.HasPrefix(input, "../") || 
+		strings.HasPrefix(input, "~") ||
+		(len(input) > 2 && input[1] == ':' && (input[0] >= 'A' && input[0] <= 'Z' || input[0] >= 'a' && input[0] <= 'z')) { // Windows drive letters
+		return true
+	}
+	
+	// Check if it's a relative path that exists on the filesystem
+	if info, err := os.Stat(input); err == nil && info.IsDir() {
+		return true
+	}
+	
+	return false
 }
 
 func parseURL(input string) (*models.RepositoryInfo, error) {
@@ -295,9 +378,18 @@ func CreateProvider(platform models.Platform, config *models.Config, token strin
 		return NewGitLabProvider(config.GitLab.BaseURL, token)
 	case models.PlatformGitHub:
 		return NewGitHubProvider(config.GitHub.BaseURL, token)
+	case models.PlatformLocal:
+		// For local platform, token is not needed, but we need the folder path
+		// This should be handled differently in the orchestration layer
+		return nil, fmt.Errorf("local platform requires special handling in orchestration layer")
 	default:
 		return nil, fmt.Errorf("unsupported platform: %s", platform)
 	}
+}
+
+// CreateLocalProvider creates a local provider for a specific folder path
+func CreateLocalProvider(folderPath string) (Provider, error) {
+	return NewLocalProvider(folderPath)
 }
 
 // Helper function for GitHub provider

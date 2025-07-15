@@ -55,26 +55,52 @@ func (o *Orchestrator) ProcessRepositories(ctx context.Context, reposByPlatform 
 
 			logger.Logger.WithField("platform", platform).Info("Processing repositories for platform")
 
-			// Get token for this platform
-			platformToken, err := GetTokenForPlatform(platform, o.config, o.cliOptions.Token)
-			if err != nil {
-				logger.Logger.WithError(err).WithField("platform", platform).Error("Failed to get token for platform")
+			// Get token for this platform (skip for local platform)
+			var platformToken string
+			var err error
+			if platform != models.PlatformLocal {
+				platformToken, err = GetTokenForPlatform(platform, o.config, o.cliOptions.Token)
+				if err != nil {
+					logger.Logger.WithError(err).WithField("platform", platform).Error("Failed to get token for platform")
 
-				platformMu.Lock()
-				fmt.Fprintf(os.Stderr, "Failed to get token for platform %s: %v\n", platform, err)
-				platformMu.Unlock()
-				return
+					platformMu.Lock()
+					fmt.Fprintf(os.Stderr, "Failed to get token for platform %s: %v\n", platform, err)
+					platformMu.Unlock()
+					return
+				}
 			}
 
 			// Create provider for this platform
-			provider, err := adapters.CreateProvider(platform, o.config, platformToken)
-			if err != nil {
-				logger.Logger.WithError(err).WithField("platform", platform).Error("Failed to create provider")
+			var provider adapters.Provider
+			if platform == models.PlatformLocal {
+				// For local platform, use the folder path from the first repository
+				if len(repoInfos) > 0 {
+					provider, err = adapters.CreateLocalProvider(repoInfos[0].FullName)
+					if err != nil {
+						logger.Logger.WithError(err).WithField("platform", platform).Error("Failed to create local provider")
 
-				platformMu.Lock()
-				fmt.Fprintf(os.Stderr, "Failed to create provider for platform %s: %v\n", platform, err)
-				platformMu.Unlock()
-				return
+						platformMu.Lock()
+						fmt.Fprintf(os.Stderr, "Failed to create local provider for platform %s: %v\n", platform, err)
+						platformMu.Unlock()
+						return
+					}
+				} else {
+					logger.Logger.WithField("platform", platform).Error("No repositories provided for local platform")
+					platformMu.Lock()
+					fmt.Fprintf(os.Stderr, "No repositories provided for local platform\n")
+					platformMu.Unlock()
+					return
+				}
+			} else {
+				provider, err = adapters.CreateProvider(platform, o.config, platformToken)
+				if err != nil {
+					logger.Logger.WithError(err).WithField("platform", platform).Error("Failed to create provider")
+
+					platformMu.Lock()
+					fmt.Fprintf(os.Stderr, "Failed to create provider for platform %s: %v\n", platform, err)
+					platformMu.Unlock()
+					return
+				}
 			}
 
 			// Test connection (skip in dry run mode)
