@@ -3,6 +3,7 @@
 # https://github.com/github/gitignore/blob/main/community/Golang/Go.AllowList.gitignore
 
 # Custom files
+CLAUDE.md
 .claude/
 sherpa
 

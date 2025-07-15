@@ -36,10 +36,10 @@ var (
 // RootCmd represents the base command when called without any subcommands
 var RootCmd = &cobra.Command{
 	Use:     "sherpa",
-	Short:   "Git Repository to LLMs.txt Generator",
+	Short:   "Git Repository to LLMs Context Generator",
 	Version: Version,
 	Long: `Sherpa is a lightweight CLI tool that fetches private repositories from
-GitLab and GitHub, generating llms.txt and llms-full.txt files for LLM context.
+GitLab and GitHub, generating comprehensive llms-full.txt files for LLM context.
 
 It helps developers quickly create LLM-readable context from internal
 codebases for debugging and cross-project analysis.
@@ -52,8 +52,8 @@ Supported platforms:
 // fetchCmd represents the fetch command
 var fetchCmd = &cobra.Command{
 	Use:   "fetch [repository...]",
-	Short: "Fetch repository and generate LLMs.txt files",
-	Long: `Fetch one or more repositories from GitLab or GitHub and generate llms.txt and llms-full.txt files.
+	Short: "Fetch repository and generate LLMs context files",
+	Long: `Fetch one or more repositories from GitLab or GitHub and generate comprehensive llms-full.txt files.
 
 Platform Detection:
   Sherpa automatically detects the platform based on the repository URL:

@@ -10,19 +10,19 @@ import (
 	"sherpa/pkg/models"
 )
 
-// Generator handles the generation of llms.txt and llms-full.txt files
+// Generator handles the generation of llms-full.txt files
 type Generator struct {
 	includeFullContent bool
 }
 
-// NewGenerator creates a new LLMs.txt generator
+// NewGenerator creates a new LLMs generator
 func NewGenerator(includeFullContent bool) *Generator {
 	return &Generator{
 		includeFullContent: includeFullContent,
 	}
 }
 
-// GenerateOutput generates the LLMs.txt output from processing results
+// GenerateOutput generates the LLMs output from processing results
 func (g *Generator) GenerateOutput(result *models.ProcessingResult) (*models.LLMsOutput, error) {
 	// Build project tree
 	projectTree := g.buildProjectTree(result.Files)

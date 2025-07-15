@@ -8,7 +8,9 @@
   <br />
 </div>
 
-Sherpa is a lightweight Go CLI tool that transforms your private repositories into LLM-ready context files. Generate `llms.txt` and `llms-full.txt` files from GitLab and GitHub repositories with lightning-fast concurrent processing.
+Sherpa is a fast, lightweight CLI tool written in Go that helps you convert your private GitHub and GitLab repositories into LLM-ready context files. It generates comprehensive `llms-full.txt` files using blazing-fast concurrent processing.
+
+Just like a mountain sherpa guides climbers through challenging terrain, Sherpa (the tool) guides your code from raw repositories to structured, LLM-consumable knowledge. Transform scattered codebases into organized context that AI can understand and work with effectively.
 
 ## Features
 
@@ -16,7 +18,7 @@ Sherpa is a lightweight Go CLI tool that transforms your private repositories in
 - ⚡ **High-Performance Concurrent Processing** - Process multiple repositories and files simultaneously
 - 🔐 **Private Repository Access** - Secure token-based authentication
 - 📁 **Smart File Processing** - Intelligent filtering with built-in `.gitignore` support
-- 🎯 **Dual Output Formats** - Generate both metadata (`llms.txt`) and full content (`llms-full.txt`) files
+- 🎯 **Comprehensive Output** - Generate complete context files with full content and metadata
 - 🛠️ **Highly Configurable** - Extensive CLI flags and YAML configuration support
 
 ## Quick Start
@@ -141,23 +143,17 @@ output:
 
 ## Output
 
-Sherpa generates two types of files:
+Sherpa generates comprehensive context files:
 
-### `llms.txt` - Repository Metadata
+### `llms-full.txt` - Complete Repository Context
 
-Contains file structure, sizes, and metadata—perfect for LLM context understanding.
-
-### `llms-full.txt` - Complete Content
-
-Includes full file contents for comprehensive code analysis and debugging.
+Includes full file contents, structure, and metadata for comprehensive code analysis and debugging.
 
 ```
 sherpa-output/
 ├── repo-name/
-│   ├── llms.txt           # Metadata and structure
-│   └── llms-full.txt      # Full file contents
+│   └── llms-full.txt      # Complete repository context
 └── another-repo/
-    ├── llms.txt
     └── llms-full.txt
 ```
 
@@ -216,11 +212,9 @@ graph TD
     V --> W[Generate Statistics]
     
     W --> X[LLM Generator]
-    X --> Y[Generate llms.txt]
-    X --> Z[Generate llms-full.txt]
+    X --> Y[Generate llms-full.txt]
     
     Y --> AA[Write Output Files]
-    Z --> AA
     O --> BB[Display Dry Run Results]
     AA --> CC[Success Report]
 ```
@@ -232,7 +226,7 @@ graph TD
    - **Platform Level**: GitHub and GitLab repositories processed simultaneously
    - **Repository Level**: Multiple repositories per platform processed concurrently (default: 5)
    - **File Level**: Multiple files per repository fetched in parallel (default: 20)
-5. **Output Generation**: LLM-ready files (`llms.txt` and `llms-full.txt`) generated concurrently
+5. **Output Generation**: Comprehensive LLM-ready context files (`llms-full.txt`) generated with complete repository information
 
 ## Performance
 

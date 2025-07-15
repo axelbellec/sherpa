@@ -238,47 +238,19 @@ func (o *Orchestrator) processRepository(
 		return
 	}
 
-	// Generate and write files concurrently
-	var fileWg sync.WaitGroup
-	fileWg.Add(2)
-
-	// Generate and write llms.txt
-	go func() {
-		defer fileWg.Done()
-
-		logger.Logger.WithField("repository", repoPath).Debug("Generating llms.txt")
-		llmsText := llmsGenerator.GenerateLLMsText(llmsOutput)
-		llmsPath := filepath.Join(repoOutputDir, "llms.txt")
-		if err := WriteFile(llmsPath, llmsText); err != nil {
-			logger.Logger.WithError(err).WithField("file", llmsPath).Error("Failed to write llms.txt")
-
-			platformMu.Lock()
-			fmt.Fprintf(os.Stderr, "Failed to write llms.txt for %s: %v\n", repoPath, err)
-			platformMu.Unlock()
-			return
-		}
-		logger.Logger.WithField("file", llmsPath).Debug("Successfully wrote llms.txt")
-	}()
-
 	// Generate and write llms-full.txt
-	go func() {
-		defer fileWg.Done()
+	logger.Logger.WithField("repository", repoPath).Debug("Generating llms-full.txt")
+	llmsFullText := llmsGenerator.GenerateLLMsFullText(llmsOutput)
+	llmsFullPath := filepath.Join(repoOutputDir, "llms-full.txt")
+	if err := WriteFile(llmsFullPath, llmsFullText); err != nil {
+		logger.Logger.WithError(err).WithField("file", llmsFullPath).Error("Failed to write llms-full.txt")
 
-		logger.Logger.WithField("repository", repoPath).Debug("Generating llms-full.txt")
-		llmsFullText := llmsGenerator.GenerateLLMsFullText(llmsOutput)
-		llmsFullPath := filepath.Join(repoOutputDir, "llms-full.txt")
-		if err := WriteFile(llmsFullPath, llmsFullText); err != nil {
-			logger.Logger.WithError(err).WithField("file", llmsFullPath).Error("Failed to write llms-full.txt")
-
-			platformMu.Lock()
-			fmt.Fprintf(os.Stderr, "Failed to write llms-full.txt for %s: %v\n", repoPath, err)
-			platformMu.Unlock()
-			return
-		}
-		logger.Logger.WithField("file", llmsFullPath).Debug("Successfully wrote llms-full.txt")
-	}()
-
-	fileWg.Wait()
+		platformMu.Lock()
+		fmt.Fprintf(os.Stderr, "Failed to write llms-full.txt for %s: %v\n", repoPath, err)
+		platformMu.Unlock()
+		return
+	}
+	logger.Logger.WithField("file", llmsFullPath).Debug("Successfully wrote llms-full.txt")
 
 	// Success message
 	logger.Logger.WithFields(map[string]interface{}{
@@ -337,8 +309,7 @@ func (o *Orchestrator) processDryRun(
 		fmt.Printf("  Estimated files: %d\n", mockResult.EstimatedFiles)
 		fmt.Printf("  Estimated size: %s\n", mockResult.EstimatedSize)
 		fmt.Printf("  Would create output: %s\n", repoOutputDir)
-		fmt.Printf("  Files that would be created:\n")
-		fmt.Printf("    - %s/llms.txt\n", repoOutputDir)
+		fmt.Printf("  File that would be created:\n")
 		fmt.Printf("    - %s/llms-full.txt\n", repoOutputDir)
 		fmt.Println()
 		platformMu.Unlock()
