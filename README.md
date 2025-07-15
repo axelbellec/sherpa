@@ -365,3 +365,11 @@ We welcome contributions! Please see our [Contributing Guide](CONTRIBUTING.md) f
 ## License
 
 MIT License - see [LICENSE](LICENSE) for details.
+
+<div align="center" style="text-align: left;">
+  <div style="background-color: #fff3cd; border: 1px solid #ffeaa7; border-radius: 8px; padding: 16px; margin-bottom: 24px; color: #856404;">
+    <strong>🧸 Toy Project</strong>
+    <br />
+    This is my personal toy project where I'm having fun learning Go and building cool stuff. Don't expect production-ready code – it's all about experimenting and playing around!
+  </div>
+</div>
