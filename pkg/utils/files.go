@@ -127,6 +127,11 @@ func IsBinaryFile(filePath string) bool {
 		return true // If we can't read it, assume it's binary
 	}
 
+	// If file is empty, consider it text
+	if n == 0 {
+		return false
+	}
+
 	// Check for null bytes (binary indicator)
 	for i := 0; i < n; i++ {
 		if buffer[i] == 0 {
@@ -134,16 +139,51 @@ func IsBinaryFile(filePath string) bool {
 		}
 	}
 
+	// Check for UTF-8 BOM (text indicator)
+	if n >= 3 && buffer[0] == 0xEF && buffer[1] == 0xBB && buffer[2] == 0xBF {
+		return false
+	}
+
+	// Check for other common text encodings
+	if n >= 2 {
+		// UTF-16 BE BOM
+		if buffer[0] == 0xFE && buffer[1] == 0xFF {
+			return false
+		}
+		// UTF-16 LE BOM
+		if buffer[0] == 0xFF && buffer[1] == 0xFE {
+			return false
+		}
+	}
+
 	// Check for high ratio of non-printable characters
 	nonPrintable := 0
+	controlChars := 0
+	
 	for i := 0; i < n; i++ {
-		if !unicode.IsPrint(rune(buffer[i])) && !unicode.IsSpace(rune(buffer[i])) {
+		b := buffer[i]
+		
+		// Allow common control characters
+		if b == 9 || b == 10 || b == 13 { // tab, newline, carriage return
+			continue
+		}
+		
+		// Count control characters (0-31, 127-159)
+		if b < 32 || (b >= 127 && b < 160) {
+			controlChars++
+		}
+		
+		// Count non-printable characters
+		if !unicode.IsPrint(rune(b)) && !unicode.IsSpace(rune(b)) {
 			nonPrintable++
 		}
 	}
 
-	// If more than 20% non-printable, consider it binary
-	if n > 0 && float64(nonPrintable)/float64(n) > 0.2 {
+	// If more than 30% non-printable or more than 5% control characters, consider it binary
+	nonPrintableRatio := float64(nonPrintable) / float64(n)
+	controlRatio := float64(controlChars) / float64(n)
+	
+	if nonPrintableRatio > 0.3 || controlRatio > 0.05 {
 		return true
 	}
 

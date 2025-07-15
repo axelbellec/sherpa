@@ -358,14 +358,13 @@ Sherpa automatically detects and handles various input formats:
 - 🔄 **Watch Mode** - Monitor local folders for changes and auto-regenerate context
 - 🔗 **Symlink Support** - Enhanced symlink handling with cycle detection
 
-## Contributing
-
-We welcome contributions! Please see our [Contributing Guide](CONTRIBUTING.md) for details.
-
 ## License
 
 MIT License - see [LICENSE](LICENSE) for details.
 
+---
+
+<br />
 <div align="center" style="text-align: left;">
   <div style="background-color: #fff3cd; border: 1px solid #ffeaa7; border-radius: 8px; padding: 16px; margin-bottom: 24px; color: #856404;">
     <strong>🧸 Toy Project</strong>

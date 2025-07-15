@@ -250,6 +250,19 @@ func (c *Client) GetMultipleFiles(ctx context.Context, owner, repo string, fileP
 		maxConcurrency = 5 // Default concurrency
 	}
 
+	// Add resource limits for security
+	const maxMemoryPerFile = 10 * 1024 * 1024 // 10MB per file
+	const maxTotalMemory = 100 * 1024 * 1024  // 100MB total limit
+	const maxFiles = 1000                     // Maximum number of files to process
+
+	if len(filePaths) > maxFiles {
+		return nil, fmt.Errorf("too many files to process safely: %d (max: %d)", len(filePaths), maxFiles)
+	}
+
+	if int64(len(filePaths))*maxMemoryPerFile > maxTotalMemory {
+		return nil, fmt.Errorf("estimated memory usage too high for %d files", len(filePaths))
+	}
+
 	semaphore := make(chan struct{}, maxConcurrency)
 	results := make(chan models.FileInfo, len(filePaths))
 
@@ -284,8 +297,7 @@ func (c *Client) GetMultipleFiles(ctx context.Context, owner, repo string, fileP
 // TestConnection tests the GitHub connection and authentication
 func (c *Client) TestConnection(ctx context.Context) error {
 	logger.Logger.WithFields(map[string]interface{}{
-		"base_url":     c.baseURL,
-		"token_prefix": c.token[:10] + "...",
+		"base_url": c.baseURL,
 	}).Debug("Testing GitHub connection")
 
 	user, resp, err := c.client.Users.Get(ctx, "")

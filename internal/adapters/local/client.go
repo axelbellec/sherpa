@@ -6,6 +6,7 @@ import (
 	"io/fs"
 	"os"
 	"path/filepath"
+	"strings"
 	"sync"
 
 	"sherpa/pkg/models"
@@ -70,6 +71,11 @@ func (c *Client) GetRepositoryTree(ctx context.Context, repoPath, branch string)
 			return nil
 		}
 
+		// Check if this is a symlink and skip it for security
+		if d.Type()&fs.ModeSymlink != 0 {
+			return nil // Skip symlinks for security
+		}
+
 		// Get relative path from base
 		relPath, err := filepath.Rel(c.basePath, path)
 		if err != nil {
@@ -103,9 +109,44 @@ func (c *Client) GetRepositoryTree(ctx context.Context, repoPath, branch string)
 	return treeItems, nil
 }
 
+// sanitizePath validates and sanitizes file paths to prevent directory traversal attacks
+func (c *Client) sanitizePath(filePath string) (string, error) {
+	// Clean the path to resolve any . or .. elements
+	cleanPath := filepath.Clean(filePath)
+	
+	// Check for absolute paths or parent directory traversal
+	if filepath.IsAbs(cleanPath) || strings.HasPrefix(cleanPath, "..") {
+		return "", fmt.Errorf("invalid file path: %s", filePath)
+	}
+	
+	// Construct full path and ensure it's within base directory
+	fullPath := filepath.Join(c.basePath, cleanPath)
+	
+	// Get absolute paths for comparison
+	absBase, err := filepath.Abs(c.basePath)
+	if err != nil {
+		return "", fmt.Errorf("failed to resolve base path: %w", err)
+	}
+	
+	absPath, err := filepath.Abs(fullPath)
+	if err != nil {
+		return "", fmt.Errorf("failed to resolve file path: %w", err)
+	}
+	
+	// Ensure the resolved path is within the base directory
+	if !strings.HasPrefix(absPath, absBase+string(filepath.Separator)) {
+		return "", fmt.Errorf("path outside base directory: %s", filePath)
+	}
+	
+	return fullPath, nil
+}
+
 // GetFileContent returns the content of a file
 func (c *Client) GetFileContent(ctx context.Context, repoPath, filePath, branch string) (string, error) {
-	fullPath := filepath.Join(c.basePath, filePath)
+	fullPath, err := c.sanitizePath(filePath)
+	if err != nil {
+		return "", err
+	}
 	
 	// Check if file exists and is readable
 	info, err := os.Stat(fullPath)
@@ -132,7 +173,14 @@ func (c *Client) GetFileContent(ctx context.Context, repoPath, filePath, branch 
 
 // GetFileInfo returns information about a file
 func (c *Client) GetFileInfo(ctx context.Context, repoPath, filePath, branch string) (*models.FileInfo, error) {
-	fullPath := filepath.Join(c.basePath, filePath)
+	fullPath, err := c.sanitizePath(filePath)
+	if err != nil {
+		return &models.FileInfo{
+			Path:  filePath,
+			Name:  filepath.Base(filePath),
+			Error: err,
+		}, nil
+	}
 	
 	info, err := os.Stat(fullPath)
 	if err != nil {
@@ -177,6 +225,19 @@ func (c *Client) GetFileInfo(ctx context.Context, repoPath, filePath, branch str
 
 // GetMultipleFiles returns information about multiple files
 func (c *Client) GetMultipleFiles(ctx context.Context, repoPath string, filePaths []string, branch string, maxConcurrency int) ([]models.FileInfo, error) {
+	// Add resource limits for security
+	const maxMemoryPerFile = 10 * 1024 * 1024 // 10MB per file
+	const maxTotalMemory = 100 * 1024 * 1024  // 100MB total limit
+	const maxFiles = 1000                     // Maximum number of files to process
+
+	if len(filePaths) > maxFiles {
+		return nil, fmt.Errorf("too many files to process safely: %d (max: %d)", len(filePaths), maxFiles)
+	}
+
+	if int64(len(filePaths))*maxMemoryPerFile > maxTotalMemory {
+		return nil, fmt.Errorf("estimated memory usage too high for %d files", len(filePaths))
+	}
+
 	// Use a semaphore to limit concurrency and WaitGroup to wait for completion
 	semaphore := make(chan struct{}, maxConcurrency)
 	results := make([]models.FileInfo, len(filePaths))

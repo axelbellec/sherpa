@@ -100,9 +100,22 @@ func (g *Generator) GenerateLLMsTextWithoutUnixTree(output *models.LLMsOutput) s
 	return sb.String()
 }
 
+// File size constants for security
+const (
+	MaxFileSize     = 5 * 1024 * 1024   // 5MB per file (increased from 1MB)
+	MaxTotalSize    = 100 * 1024 * 1024  // 100MB total
+	WarningFileSize = 1024 * 1024        // 1MB warning threshold
+)
+
 // GenerateLLMsFullText generates the complete llms-full.txt content with file contents
 func (g *Generator) GenerateLLMsFullText(output *models.LLMsOutput) string {
 	var sb strings.Builder
+
+	// Validate total file size before processing
+	if err := g.validateFileSize(output.FileContents); err != nil {
+		sb.WriteString(fmt.Sprintf("## Error: %s\n\n", err.Error()))
+		return sb.String()
+	}
 
 	// Include basic structure but with regular tree format (not Unix tree)
 	sb.WriteString(g.GenerateLLMsTextWithoutUnixTree(output))
@@ -129,14 +142,17 @@ func (g *Generator) GenerateLLMsFullText(output *models.LLMsOutput) string {
 			continue
 		}
 
-		// Skip very large files (>1MB)
-		if file.Size > 1024*1024 {
+		// Skip very large files (>5MB)
+		if file.Size > MaxFileSize {
 			sb.WriteString(fmt.Sprintf("### %s\n", file.Path))
-			sb.WriteString(fmt.Sprintf("```\n[File too large to include - %s]\n```\n\n", formatBytes(file.Size)))
+			sb.WriteString(fmt.Sprintf("```\n[File too large to include - %s (max: %s)]\n```\n\n", formatBytes(file.Size), formatBytes(MaxFileSize)))
 			continue
 		}
 
-		sb.WriteString(fmt.Sprintf("### %s\n", file.Path))
+		// Add warning for large files
+		if file.Size > WarningFileSize {
+			sb.WriteString(fmt.Sprintf("### %s (Large file: %s)\n", file.Path, formatBytes(file.Size)))
+		}
 
 		// Determine file extension for syntax highlighting
 		ext := strings.ToLower(filepath.Ext(file.Path))
@@ -151,6 +167,32 @@ func (g *Generator) GenerateLLMsFullText(output *models.LLMsOutput) string {
 	}
 
 	return sb.String()
+}
+
+// validateFileSize validates that files don't exceed size limits
+func (g *Generator) validateFileSize(files []models.FileInfo) error {
+	var totalSize int64
+	
+	for _, file := range files {
+		// Skip directories
+		if file.IsDir {
+			continue
+		}
+		
+		// Check individual file size
+		if file.Size > MaxFileSize {
+			return fmt.Errorf("file %s exceeds maximum size (%s > %s)", file.Path, formatBytes(file.Size), formatBytes(MaxFileSize))
+		}
+		
+		totalSize += file.Size
+		
+		// Check total size
+		if totalSize > MaxTotalSize {
+			return fmt.Errorf("total file size exceeds limit (%s > %s)", formatBytes(totalSize), formatBytes(MaxTotalSize))
+		}
+	}
+	
+	return nil
 }
 
 // buildProjectTree creates a hierarchical tree structure
