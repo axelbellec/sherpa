@@ -1,0 +1,368 @@
+{
+    "project_name": "Sherpa",
+    "tagline": "Guiding Code to AI Understanding",
+    "brand_essence": {
+        "primary_concept": "Guide and pathfinder for navigating complex codebases",
+        "secondary_concepts": [
+            "Bridge between Git repositories and AI/LLM context",
+            "Multi-platform connectivity",
+            "High-performance concurrent processing",
+            "Developer productivity tool"
+        ]
+    },
+    "layout_specifications": {
+        "banner_proportions": {
+            "total_width": "100%",
+            "text_section": "60-65% of width (left side)",
+            "visual_section": "35-40% of width (right side)",
+            "height": "Maintain readability while maximizing impact"
+        },
+        "text_positioning": {
+            "title_size": "Large, dominant - approximately 40-50% of banner height",
+            "tagline_size": "Not visible",
+            "vertical_alignment": "Centered within left section",
+            "margins": "Comfortable padding from edges and between elements",
+            "horizontal_padding": "15% left padding, 15% right padding for increased breathing room"
+        },
+        "sherpa_positioning": {
+            "placement": "Right side, integrated into gradient",
+            "size": "Proportional to banner height, prominent but not overwhelming",
+            "angle": "Slight perspective to create depth and interest",
+            "shadow": "Realistic shadow grounding the figure"
+        },
+        "gradient_treatment": {
+            "direction": "Diagonal sweep from upper left to lower right",
+            "opacity": "Solid background ensuring text readability"
+        }
+    },
+    "visual_metaphors": {
+        "primary": {
+            "sherpa_guide": "Mountain guide/navigator representing guidance through complex codebases",
+            "usage": "Stylized sherpa figure or mountain peak silhouette"
+        },
+        "secondary": [
+            {
+                "git_branches": "Branching paths representing Git repository structure",
+                "usage": "Abstract tree/branch patterns integrated into design"
+            },
+            {
+                "platform_bridges": "Connection points between different platforms (GitHub/GitLab)",
+                "usage": "Interlocking elements or bridge-like structures"
+            },
+            {
+                "concurrent_streams": "Multiple parallel paths representing concurrent processing",
+                "usage": "Flowing lines or parallel geometric elements"
+            },
+            {
+                "data_transformation": "Input/output transformation from code to AI-readable format",
+                "usage": "Geometric transformation or flow indicators"
+            }
+        ]
+    },
+    "color_palette": {
+        "background_gradient": {
+            "primary_gradient": [
+                "#6B46C1",
+                "#8B5CF6",
+                "#A855F7",
+                "#C084FC"
+            ],
+            "description": "Purple to lighter purple diagonal gradient background",
+            "usage": "Main banner background"
+        },
+        "accent_elements": {
+            "neon_pink_stripe": "#FF1493",
+            "description": "Bright neon pink diagonal accent stripe",
+            "usage": "Dynamic accent element cutting through background"
+        },
+        "typography_colors": {
+            "title_fill": "#FF4081",
+            "title_stroke": "#FFFFFF",
+            "tagline_color": "#FFFFFF",
+            "description": "Pink fill with white stroke for title, white for tagline",
+            "usage": "Text color scheme for maximum contrast and impact"
+        },
+        "sherpa_element": {
+            "mountain_colors": [
+                "#4A5568",
+                "#2D3748",
+                "#1A202C"
+            ],
+            "sherpa_colors": [
+                "#F7FAFC",
+                "#EDF2F7",
+                "#E2E8F0"
+            ],
+            "equipment_colors": [
+                "#F6AD55",
+                "#ED8936",
+                "#C05621"
+            ],
+            "description": "Realistic mountain grays, sherpa figure in light colors, warm equipment tones",
+            "usage": "3D sherpa and mountain scene on the right"
+        }
+    },
+    "primary_layout": {
+        "composition": "Horizontal banner with text-heavy left side and visual element right",
+        "left_section": {
+            "content": [
+                "Large title",
+                "Descriptive tagline"
+            ],
+            "text_treatment": "Bold, 3D-style typography with white outline/stroke",
+            "hierarchy": "Dominant title with supporting tagline below"
+        },
+        "right_section": {
+            "content": "3D rendered sherpa figure on mountain peak",
+            "style": "Dimensional object with realistic lighting and shadows",
+            "integration": "Seamlessly integrated into background gradient"
+        },
+        "background": "Diagonal gradient banner spanning full width"
+    },
+    "typography": {
+        "title_style": {
+            "style": "Bold, chunky, 3D-effect typography",
+            "characteristics": [
+                "Thick strokes",
+                "White outline/border",
+                "Dimensional appearance",
+                "High impact"
+            ],
+            "treatment": "Pink/magenta fill with white stroke outline",
+            "examples": [
+                "Cooper Black",
+                "Bebas Neue",
+                "Montserrat Black"
+            ],
+            "usage": "Main 'Sherpa' title - large and dominant"
+        },
+        "tagline_style": {
+            "style": "Clean, modern sans-serif",
+            "characteristics": [
+                "Readable",
+                "Professional",
+                "Contrasting to bold title"
+            ],
+            "treatment": "White or light color for contrast",
+            "examples": [
+                "Inter",
+                "Roboto",
+                "Source Sans Pro"
+            ],
+            "usage": "Multi-Platform Git Repository to LLMs.txt Generator"
+        },
+        "brand_mark": {
+            "style": "Small, subtle brand identifier",
+            "treatment": "Minimal text in corner",
+            "usage": "Optional company/creator identifier"
+        }
+    },
+    "logo_variations": {
+        "primary_banner": {
+            "description": "Main horizontal banner design with title and 3D sherpa scene",
+            "components": [
+                "Background gradient",
+                "Bold title with stroke",
+                "Tagline",
+                "3D sherpa on mountain"
+            ],
+            "usage": "Headers, main branding, wide format presentations",
+            "aspect_ratio": "Approximately 4:1 wide banner format"
+        },
+        "compact_horizontal": {
+            "description": "Simplified version with smaller sherpa icon and title",
+            "components": [
+                "Simplified gradient background",
+                "Title",
+                "Small sherpa icon"
+            ],
+            "usage": "Navigation bars, toolbars, medium-width spaces"
+        },
+        "icon_with_text": {
+            "description": "Sherpa mountain icon with text below",
+            "components": [
+                "3D sherpa mountain scene",
+                "Title below"
+            ],
+            "usage": "App icons with labels, square formats"
+        },
+        "icon_only": {
+            "description": "Standalone 3D sherpa on mountain scene",
+            "components": [
+                "3D sherpa figure and mountain peak only"
+            ],
+            "usage": "Favicons, app icons, minimal branding contexts"
+        }
+    },
+    "icon_design_elements": {
+        "sherpa_scene": {
+            "type": "3D rendered sherpa figure positioned on mountain peak",
+            "style": "Realistic 3D rendering with proper lighting and shadows",
+            "elements": [
+                "Detailed sherpa figure in climbing gear with backpack and equipment",
+                "Rocky mountain peak base with textured surfaces",
+                "Climbing ropes, ice axes, or technical gear as accent elements",
+                "Realistic proportions and mountaineering authenticity"
+            ],
+            "positioning": "Sherpa figure prominently positioned, suggesting guidance and expertise"
+        },
+        "supporting_elements": [
+            {
+                "git_integration": "Subtle tech elements integrated into sherpa's gear (tablet, GPS device)",
+                "style": "Modern tech accessories that don't compromise the mountaineering theme"
+            },
+            {
+                "platform_indicators": "Small geometric badges or patches on sherpa's gear representing GitHub/GitLab",
+                "style": "Realistic gear badges with platform colors"
+            },
+            {
+                "navigation_elements": "Compass, map elements, or path markers suggesting guidance",
+                "style": "Traditional mountaineering navigation tools with subtle tech integration"
+            }
+        ],
+        "lighting_and_effects": {
+            "lighting": "Dramatic mountain lighting with clear shadows",
+            "atmosphere": "Clear, professional mountain environment",
+            "depth": "Strong depth of field focusing on sherpa figure",
+            "integration": "Seamless integration with gradient background"
+        }
+    },
+    "design_principles": {
+        "visual_impact": {
+            "requirement": "Eye-catching and memorable with vibrant colors",
+            "approach": "Bold gradients, 3D depth, modern aesthetic"
+        },
+        "scalability": {
+            "requirement": "Must work from 16px favicon to large format, maintaining 3D appeal",
+            "approach": "Clear silhouettes with simplified 3D forms at small sizes"
+        },
+        "versatility": {
+            "requirement": "Work on light/dark backgrounds while maintaining vibrancy",
+            "approach": "Strong contrast with bright colors, subtle drop shadows"
+        },
+        "memorability": {
+            "requirement": "Stand out in developer tools landscape with modern 3D aesthetic",
+            "approach": "Unique sherpa/mountain metaphor rendered in contemporary 3D style"
+        },
+        "approachability": {
+            "requirement": "Balance professional credibility with modern, friendly appeal",
+            "approach": "Smooth forms, vibrant but not overwhelming colors, premium feel"
+        }
+    },
+    "technical_specifications": {
+        "formats": {
+            "vector": [
+                "SVG with gradient support",
+                "AI",
+                "EPS"
+            ],
+            "raster": [
+                "PNG with transparency",
+                "JPG",
+                "WebP"
+            ],
+            "3d_formats": [
+                "Blender file",
+                "OBJ",
+                "FBX for 3D source"
+            ],
+            "sizes": [
+                "16px",
+                "32px",
+                "64px",
+                "128px",
+                "256px",
+                "512px",
+                "1024px"
+            ]
+        },
+        "color_modes": {
+            "full_color": "Full gradient palette with 3D rendering",
+            "simplified_gradient": "Two-color gradients for reduced complexity",
+            "flat_color": "Single colors for minimal contexts",
+            "monochrome": "Grayscale versions maintaining depth through shading",
+            "reverse": "Light versions for dark backgrounds"
+        },
+        "rendering_considerations": {
+            "gradient_support": "Ensure gradients render properly across all platforms",
+            "fallback_designs": "Simplified versions for contexts without gradient support",
+            "shadow_handling": "Subtle drop shadows that work on various backgrounds"
+        }
+    },
+    "usage_guidelines": {
+        "minimum_banner_width": "800px for full detail, 400px minimum simplified version",
+        "clear_space": "10% of banner height on all sides when used as standalone element",
+        "horizontal_padding": "15% left and right padding from banner edges for improved visual balance",
+        "text_legibility": "Ensure title stroke width maintains readability at all sizes",
+        "backgrounds": {
+            "preferred": [
+                "Used as standalone banner with built-in gradient background"
+            ],
+            "avoid": [
+                "Placing banner over competing backgrounds",
+                "Insufficient contrast scenarios"
+            ]
+        },
+        "responsive_behavior": {
+            "large_screens": "Full banner with detailed sherpa scene",
+            "medium_screens": "Simplified sherpa icon, maintained text hierarchy",
+            "small_screens": "Icon-only or simplified horizontal version"
+        },
+        "don_ts": [
+            "Don't separate the gradient background from the composition",
+            "Don't use title without white stroke outline",
+            "Don't place sherpa scene over unrelated backgrounds",
+            "Don't compress banner height below text readability threshold"
+        ]
+    },
+    "context_applications": {
+        "digital": [
+            "GitHub repository headers",
+            "CLI tool branding",
+            "Documentation websites",
+            "Developer tools integration",
+            "Social media profiles"
+        ],
+        "developer_focused": [
+            "Terminal/CLI interface branding",
+            "IDE plugin icons",
+            "Configuration file examples",
+            "Technical documentation",
+            "Developer community presence"
+        ]
+    },
+    "inspiration_keywords": [
+        "3D rendered",
+        "Gradient",
+        "Vibrant",
+        "Modern",
+        "Smooth",
+        "Glossy",
+        "Navigation",
+        "Guidance",
+        "Pathfinding",
+        "Bridge",
+        "Connection",
+        "Multi-platform",
+        "Concurrent",
+        "Efficient",
+        "Developer-friendly",
+        "Git",
+        "Repository",
+        "Code",
+        "AI",
+        "LLM",
+        "Transformation",
+        "Mountain",
+        "Sherpa",
+        "Guide",
+        "Route",
+        "Journey",
+        "Contemporary",
+        "Eye-catching",
+        "Premium",
+        "Playful",
+        "Professional",
+        "Dimensional"
+    ]
+}
