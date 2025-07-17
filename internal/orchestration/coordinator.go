@@ -8,9 +8,9 @@ import (
 	"sync"
 	"time"
 
+	"sherpa/internal/adapters"
 	"sherpa/internal/generators"
 	"sherpa/internal/pipeline"
-	"sherpa/internal/adapters"
 	"sherpa/pkg/logger"
 	"sherpa/pkg/models"
 	"sherpa/pkg/utils"
@@ -308,7 +308,7 @@ func (o *Orchestrator) processDryRun(
 	repoProcessor *pipeline.RepoProcessor,
 	platformMu *sync.Mutex,
 ) {
-	_ = ctx // unused in dry run mode
+	_ = ctx           // unused in dry run mode
 	_ = repoProcessor // unused in dry run mode
 	repoPath := repoInfo.FullName
 	logger.Logger.WithFields(map[string]interface{}{
@@ -362,7 +362,7 @@ func (o *Orchestrator) simulateRepositoryProcessing(repoInfo *models.RepositoryI
 	_ = platform // unused for now, could be used for platform-specific estimates
 	// These are mock estimates - in a real implementation, you might want to
 	// make lightweight API calls to get basic repo info without fetching all files
-	estimatedFiles := 50 // Mock estimate
+	estimatedFiles := 50     // Mock estimate
 	estimatedSize := "2.5MB" // Mock estimate
 
 	// You could potentially make a single API call to get repository metadata

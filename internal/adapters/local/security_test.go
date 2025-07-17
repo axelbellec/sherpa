@@ -8,6 +8,7 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+	"sherpa/pkg/models"
 )
 
 func TestPathTraversalProtection(t *testing.T) {
@@ -74,7 +75,12 @@ func TestResourceLimits(t *testing.T) {
 		tooManyFiles[i] = "file" + string(rune(i)) + ".txt"
 	}
 
-	_, err = client.GetMultipleFiles(context.Background(), "", tooManyFiles, "", 5)
+	config := &models.ProcessingConfig{
+		MaxFiles:         1000,
+		MaxMemoryPerFile: 10 * 1024 * 1024,
+		MaxTotalMemory:   100 * 1024 * 1024,
+	}
+	_, err = client.GetMultipleFiles(context.Background(), "", tooManyFiles, "", 5, config)
 	assert.Error(t, err)
 	assert.Contains(t, err.Error(), "too many files to process safely")
 }

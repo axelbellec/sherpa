@@ -18,7 +18,7 @@ func TestRootCmd(t *testing.T) {
 	}{
 		{
 			name:     "should have correct use",
-			expected: "sherpa",
+			expected: "sherpa [repository...]",
 		},
 	}
 
@@ -27,18 +27,12 @@ func TestRootCmd(t *testing.T) {
 			assert.Equal(t, tt.expected, RootCmd.Use)
 		})
 	}
-}
-
-func TestFetchCmd(t *testing.T) {
-	t.Run("should have correct use", func(t *testing.T) {
-		assert.Equal(t, "fetch [repository...]", fetchCmd.Use)
-	})
 
 	t.Run("should require minimum args", func(t *testing.T) {
 		cmd := &cobra.Command{}
 		cmd.SetArgs([]string{})
 
-		err := fetchCmd.Args(cmd, []string{})
+		err := RootCmd.Args(cmd, []string{})
 		assert.Error(t, err)
 	})
 
@@ -46,7 +40,7 @@ func TestFetchCmd(t *testing.T) {
 		cmd := &cobra.Command{}
 		cmd.SetArgs([]string{"owner/repo"})
 
-		err := fetchCmd.Args(cmd, []string{"owner/repo"})
+		err := RootCmd.Args(cmd, []string{"owner/repo"})
 		assert.NoError(t, err)
 	})
 }

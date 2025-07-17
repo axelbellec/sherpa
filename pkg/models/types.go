@@ -27,11 +27,14 @@ type GitHubConfig struct {
 
 // ProcessingConfig contains file processing settings
 type ProcessingConfig struct {
-	Ignore         []string `yaml:"ignore"`
-	IncludeOnly    []string `yaml:"include_only"`
-	MaxFileSize    string   `yaml:"max_file_size"`
-	SkipBinary     bool     `yaml:"skip_binary"`
-	MaxConcurrency int      `yaml:"max_concurrency"`
+	Ignore           []string `yaml:"ignore"`
+	IncludeOnly      []string `yaml:"include_only"`
+	MaxFileSize      string   `yaml:"max_file_size"`
+	SkipBinary       bool     `yaml:"skip_binary"`
+	MaxConcurrency   int      `yaml:"max_concurrency"`
+	MaxMemoryPerFile int64    `yaml:"max_memory_per_file"` // Maximum memory per file in bytes
+	MaxTotalMemory   int64    `yaml:"max_total_memory"`    // Maximum total memory in bytes
+	MaxFiles         int      `yaml:"max_files"`           // Maximum number of files to process
 }
 
 // OutputConfig contains output generation settings
@@ -142,6 +145,9 @@ type CLIOptions struct {
 	DefaultPlatform     string
 	MaxReposConcurrency int
 	MaxFilesConcurrency int
+	MaxMemoryPerFile    int64
+	MaxTotalMemory      int64
+	MaxFiles            int
 	Verbose             bool
 	Quiet               bool
 	DryRun              bool

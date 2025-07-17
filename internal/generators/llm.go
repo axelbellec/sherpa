@@ -103,8 +103,8 @@ func (g *Generator) GenerateLLMsTextWithoutUnixTree(output *models.LLMsOutput) s
 // File size constants for security
 const (
 	MaxFileSize     = 5 * 1024 * 1024   // 5MB per file (increased from 1MB)
-	MaxTotalSize    = 100 * 1024 * 1024  // 100MB total
-	WarningFileSize = 1024 * 1024        // 1MB warning threshold
+	MaxTotalSize    = 100 * 1024 * 1024 // 100MB total
+	WarningFileSize = 1024 * 1024       // 1MB warning threshold
 )
 
 // GenerateLLMsFullText generates the complete llms-full.txt content with file contents
@@ -174,26 +174,26 @@ func (g *Generator) GenerateLLMsFullText(output *models.LLMsOutput) string {
 // validateFileSize validates that files don't exceed size limits
 func (g *Generator) validateFileSize(files []models.FileInfo) error {
 	var totalSize int64
-	
+
 	for _, file := range files {
 		// Skip directories
 		if file.IsDir {
 			continue
 		}
-		
+
 		// Check individual file size
 		if file.Size > MaxFileSize {
 			return fmt.Errorf("file %s exceeds maximum size (%s > %s)", file.Path, formatBytes(file.Size), formatBytes(MaxFileSize))
 		}
-		
+
 		totalSize += file.Size
-		
+
 		// Check total size
 		if totalSize > MaxTotalSize {
 			return fmt.Errorf("total file size exceeds limit (%s > %s)", formatBytes(totalSize), formatBytes(MaxTotalSize))
 		}
 	}
-	
+
 	return nil
 }
 

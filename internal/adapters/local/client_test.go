@@ -301,7 +301,12 @@ func TestClient_GetMultipleFiles(t *testing.T) {
 	ctx := context.Background()
 	filePaths := []string{"main.go", "config.json", "README.md", "subdir/test.go", "binary.bin", "nonexistent.go"}
 
-	results, err := client.GetMultipleFiles(ctx, "test", filePaths, "main", 3)
+	config := &models.ProcessingConfig{
+		MaxFiles:         1000,
+		MaxMemoryPerFile: 10 * 1024 * 1024,
+		MaxTotalMemory:   100 * 1024 * 1024,
+	}
+	results, err := client.GetMultipleFiles(ctx, "test", filePaths, "main", 3, config)
 	require.NoError(t, err)
 	require.Equal(t, len(filePaths), len(results))
 
@@ -361,7 +366,12 @@ func TestClient_GetMultipleFiles_Concurrency(t *testing.T) {
 
 	for _, maxConcurrency := range concurrencyLevels {
 		t.Run(fmt.Sprintf("concurrency_%d", maxConcurrency), func(t *testing.T) {
-			results, err := client.GetMultipleFiles(ctx, "test", moreFiles, "main", maxConcurrency)
+			config := &models.ProcessingConfig{
+				MaxFiles:         1000,
+				MaxMemoryPerFile: 10 * 1024 * 1024,
+				MaxTotalMemory:   100 * 1024 * 1024,
+			}
+			results, err := client.GetMultipleFiles(ctx, "test", moreFiles, "main", maxConcurrency, config)
 			require.NoError(t, err)
 			require.Equal(t, len(moreFiles), len(results))
 

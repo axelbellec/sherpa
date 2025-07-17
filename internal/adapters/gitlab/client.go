@@ -231,7 +231,7 @@ func (c *Client) GetFileInfo(ctx context.Context, repoPath, filePath, branch str
 }
 
 // GetMultipleFiles fetches multiple files concurrently with rate limiting
-func (c *Client) GetMultipleFiles(ctx context.Context, repoPath string, filePaths []string, branch string, maxConcurrency int) ([]models.FileInfo, error) {
+func (c *Client) GetMultipleFiles(ctx context.Context, repoPath string, filePaths []string, branch string, maxConcurrency int, config *models.ProcessingConfig) ([]models.FileInfo, error) {
 	logger.Logger.WithFields(map[string]interface{}{
 		"repository":      repoPath,
 		"file_count":      len(filePaths),
@@ -243,9 +243,9 @@ func (c *Client) GetMultipleFiles(ctx context.Context, repoPath string, filePath
 	}
 
 	// Add resource limits for security
-	const maxMemoryPerFile = 10 * 1024 * 1024 // 10MB per file
-	const maxTotalMemory = 100 * 1024 * 1024  // 100MB total limit
-	const maxFiles = 1000                     // Maximum number of files to process
+	maxMemoryPerFile := config.MaxMemoryPerFile
+	maxTotalMemory := config.MaxTotalMemory
+	maxFiles := config.MaxFiles
 
 	if len(filePaths) > maxFiles {
 		return nil, fmt.Errorf("too many files to process safely: %d (max: %d)", len(filePaths), maxFiles)

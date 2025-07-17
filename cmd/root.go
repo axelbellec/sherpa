@@ -5,8 +5,8 @@ import (
 	"fmt"
 	"strings"
 
-	"sherpa/internal/config"
 	"sherpa/internal/adapters"
+	"sherpa/internal/config"
 	"sherpa/internal/orchestration"
 	"sherpa/pkg/logger"
 	"sherpa/pkg/models"
@@ -30,30 +30,22 @@ var (
 	defaultPlatform     string
 	maxReposConcurrency int
 	maxFilesConcurrency int
+	maxMemoryPerFile    int64
+	maxTotalMemory      int64
+	maxFiles            int
 	dryRun              bool
 )
 
 // RootCmd represents the base command when called without any subcommands
 var RootCmd = &cobra.Command{
-	Use:     "sherpa",
+	Use:     "sherpa [repository...]",
 	Short:   "Git Repository to LLMs Context Generator",
 	Version: Version,
-	Long: `Sherpa is a lightweight CLI tool that fetches private repositories from
-GitLab and GitHub, generating comprehensive llms-full.txt files for LLM context.
+	Long: `Sherpa is a lightweight CLI tool that processes repositories from
+GitLab, GitHub, and local folders, generating comprehensive llms-full.txt files for LLM context.
 
 It helps developers quickly create LLM-readable context from internal
 codebases for debugging and cross-project analysis.
-
-Supported platforms:
-  - GitLab (gitlab.com and self-hosted)
-  - GitHub (github.com and GitHub Enterprise)`,
-}
-
-// fetchCmd represents the fetch command
-var fetchCmd = &cobra.Command{
-	Use:   "fetch [repository...]",
-	Short: "Fetch repository and generate LLMs context files",
-	Long: `Fetch one or more repositories from GitLab, GitHub, or local folders and generate comprehensive llms-full.txt files.
 
 Platform Detection:
   Sherpa automatically detects the platform based on the repository URL or path:
@@ -72,61 +64,62 @@ Branch Targeting:
 
 Examples:
   # GitHub repositories
-  sherpa fetch https://github.com/owner/repo --token $GITHUB_TOKEN
-  sherpa fetch owner/repo --token $GITHUB_TOKEN
+  sherpa https://github.com/owner/repo --token $GITHUB_TOKEN
+  sherpa owner/repo --token $GITHUB_TOKEN
 
   # GitLab repositories  
-  sherpa fetch https://gitlab.com/owner/repo --token $GITLAB_TOKEN
-  sherpa fetch platform-api --token $GITLAB_TOKEN
+  sherpa https://gitlab.com/owner/repo --token $GITLAB_TOKEN
+  sherpa platform-api --token $GITLAB_TOKEN
 
   # Local folders
-  sherpa fetch /path/to/my/project
-  sherpa fetch ./src/backend
-  sherpa fetch ~/my-projects/frontend
+  sherpa /path/to/my/project
+  sherpa ./src/backend
+  sherpa ~/my-projects/frontend
 
   # Branch targeting
-  sherpa fetch owner/repo#feature-branch --token $GITHUB_TOKEN
-  sherpa fetch https://github.com/user/repo1#main https://gitlab.com/group/repo2#develop
+  sherpa owner/repo#feature-branch --token $GITHUB_TOKEN
+  sherpa https://github.com/user/repo1#main https://gitlab.com/group/repo2#develop
 
   # Use default platform for owner/repo format
-  sherpa fetch owner/repo --default-platform github
-  sherpa fetch owner/repo --default-platform gitlab
+  sherpa owner/repo --default-platform github
+  sherpa owner/repo --default-platform gitlab
 
   # Mixed platforms with environment tokens
-  sherpa fetch owner/repo platform-api ./local-project
+  sherpa owner/repo platform-api ./local-project
 
   # Use configuration file
-  sherpa fetch platform-api --config .sherpa.yml
+  sherpa platform-api --config .sherpa.yml
 
   # Specify output directory
-  sherpa fetch platform-api --token $GITLAB_TOKEN --output ./contexts
+  sherpa platform-api --token $GITLAB_TOKEN --output ./contexts
 
   # Use ignore patterns
-  sherpa fetch platform-api --token $GITLAB_TOKEN --ignore "*.test.go,vendor/,*.log"
+  sherpa platform-api --token $GITLAB_TOKEN --ignore "*.test.go,vendor/,*.log"
   
   # Preview operations with dry run
-  sherpa fetch owner/repo --dry-run --token $GITHUB_TOKEN
-  sherpa fetch repo1 repo2 repo3 ./local-folder --dry-run --token $GITHUB_TOKEN`,
+  sherpa owner/repo --dry-run --token $GITHUB_TOKEN
+  sherpa repo1 repo2 repo3 ./local-folder --dry-run --token $GITHUB_TOKEN`,
 	Args: cobra.MinimumNArgs(1),
 	RunE: runFetch,
 }
 
 func init() {
-	RootCmd.AddCommand(fetchCmd)
-
-	// Persistent flags
-	fetchCmd.Flags().StringVarP(&token, "token", "t", "", "Personal access token for Git platform (required)")
-	fetchCmd.Flags().StringVar(&baseURL, "base-url", "", "Custom base URL for self-hosted instances")
-	fetchCmd.Flags().StringVarP(&outputDir, "output", "o", "./sherpa-output", "Output directory")
-	fetchCmd.Flags().StringVar(&ignoreFlag, "ignore", "", "Comma-separated ignore patterns")
-	fetchCmd.Flags().StringVar(&includeOnly, "include-only", "", "Include only matching patterns")
-	fetchCmd.Flags().StringVarP(&configFile, "config", "c", "", "Configuration file path")
-	fetchCmd.Flags().StringVar(&defaultPlatform, "default-platform", "", "Default platform for owner/repo format (github or gitlab)")
-	fetchCmd.Flags().BoolVarP(&verbose, "verbose", "v", false, "Verbose output")
-	fetchCmd.Flags().BoolVarP(&quiet, "quiet", "q", false, "Suppress progress output")
-	fetchCmd.Flags().IntVarP(&maxReposConcurrency, "max-repos-concurrency", "m", 5, "Maximum number of repositories to process concurrently")
-	fetchCmd.Flags().IntVar(&maxFilesConcurrency, "max-files-concurrency", 20, "Maximum number of files to fetch concurrently per repository")
-	fetchCmd.Flags().BoolVar(&dryRun, "dry-run", false, "Preview operations without making API calls or creating files")
+	// Flags for root command
+	RootCmd.Flags().StringVarP(&token, "token", "t", "", "Personal access token for Git platform (required)")
+	RootCmd.Flags().StringVar(&baseURL, "base-url", "", "Custom base URL for self-hosted instances")
+	RootCmd.Flags().StringVarP(&outputDir, "output", "o", "./sherpa-output", "Output directory")
+	RootCmd.Flags().StringVar(&ignoreFlag, "ignore", "", "Comma-separated ignore patterns")
+	RootCmd.Flags().StringVar(&includeOnly, "include-only", "", "Include only matching patterns")
+	RootCmd.Flags().StringVarP(&configFile, "config", "c", "", "Configuration file path")
+	RootCmd.Flags().StringVar(&defaultPlatform, "default-platform", "", "Default platform for owner/repo format (github or gitlab)")
+	RootCmd.Flags().BoolVarP(&verbose, "verbose", "v", false, "Verbose output")
+	RootCmd.Flags().BoolVarP(&quiet, "quiet", "q", false, "Suppress progress output")
+	RootCmd.Flags().IntVarP(&maxReposConcurrency, "max-repos-concurrency", "m", 5, "Maximum number of repositories to process concurrently")
+	RootCmd.Flags().IntVar(&maxFilesConcurrency, "max-files-concurrency", 20, "Maximum number of files to process concurrently per repository")
+	RootCmd.Flags().Int64Var(&maxMemoryPerFile, "max-memory-per-file", 50*1024*1024, "Maximum memory per file in bytes (default: 50MB)")
+	RootCmd.Flags().Int64Var(&maxTotalMemory, "max-total-memory", 2*1024*1024*1024, "Maximum total memory in bytes (default: 2GB)")
+	RootCmd.Flags().IntVar(&maxFiles, "max-files", 1000, "Maximum number of files to process")
+	RootCmd.Flags().BoolVar(&dryRun, "dry-run", false, "Preview operations without making API calls or creating files")
 }
 
 // runFetch executes the fetch command
@@ -140,7 +133,7 @@ func runFetch(cmd *cobra.Command, args []string) error {
 		logger.SetVerbose()
 	}
 
-	logger.Logger.Info("Starting sherpa fetch operation")
+	logger.Logger.Info("Starting sherpa operation")
 
 	// Create CLI options from flags
 	cliOptions := &models.CLIOptions{
@@ -153,6 +146,9 @@ func runFetch(cmd *cobra.Command, args []string) error {
 		DefaultPlatform:     defaultPlatform,
 		MaxReposConcurrency: maxReposConcurrency,
 		MaxFilesConcurrency: maxFilesConcurrency,
+		MaxMemoryPerFile:    maxMemoryPerFile,
+		MaxTotalMemory:      maxTotalMemory,
+		MaxFiles:            maxFiles,
 		Verbose:             verbose,
 		Quiet:               quiet,
 		DryRun:              dryRun,
@@ -221,4 +217,3 @@ func parseRepositories(args []string, defaultPlatformFlag string) (map[models.Pl
 
 	return reposByPlatform, nil
 }
-

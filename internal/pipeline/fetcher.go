@@ -105,7 +105,7 @@ func (rp *RepoProcessor) ProcessRepository(ctx context.Context, repoPath string,
 		filePaths[i] = file.Path
 	}
 
-	files, err := rp.provider.GetMultipleFiles(ctx, repoPath, filePaths, branch, maxConcurrency)
+	files, err := rp.provider.GetMultipleFiles(ctx, repoPath, filePaths, branch, maxConcurrency, &rp.config)
 	if err != nil {
 		logger.Logger.WithError(err).WithField("repository", repoPath).Error("Failed to fetch files")
 		return nil, fmt.Errorf("failed to fetch files: %w", err)

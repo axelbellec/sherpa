@@ -44,7 +44,7 @@ func NewClient(basePath string) (*Client, error) {
 func (c *Client) GetRepository(ctx context.Context, repoPath string) (*models.Repository, error) {
 	// For local folders, we create a mock repository object
 	folderName := filepath.Base(c.basePath)
-	
+
 	return &models.Repository{
 		ID:                folderName,
 		Name:              folderName,
@@ -113,31 +113,31 @@ func (c *Client) GetRepositoryTree(ctx context.Context, repoPath, branch string)
 func (c *Client) sanitizePath(filePath string) (string, error) {
 	// Clean the path to resolve any . or .. elements
 	cleanPath := filepath.Clean(filePath)
-	
+
 	// Check for absolute paths or parent directory traversal
 	if filepath.IsAbs(cleanPath) || strings.HasPrefix(cleanPath, "..") {
 		return "", fmt.Errorf("invalid file path: %s", filePath)
 	}
-	
+
 	// Construct full path and ensure it's within base directory
 	fullPath := filepath.Join(c.basePath, cleanPath)
-	
+
 	// Get absolute paths for comparison
 	absBase, err := filepath.Abs(c.basePath)
 	if err != nil {
 		return "", fmt.Errorf("failed to resolve base path: %w", err)
 	}
-	
+
 	absPath, err := filepath.Abs(fullPath)
 	if err != nil {
 		return "", fmt.Errorf("failed to resolve file path: %w", err)
 	}
-	
+
 	// Ensure the resolved path is within the base directory
 	if !strings.HasPrefix(absPath, absBase+string(filepath.Separator)) {
 		return "", fmt.Errorf("path outside base directory: %s", filePath)
 	}
-	
+
 	return fullPath, nil
 }
 
@@ -147,13 +147,13 @@ func (c *Client) GetFileContent(ctx context.Context, repoPath, filePath, branch 
 	if err != nil {
 		return "", err
 	}
-	
+
 	// Check if file exists and is readable
 	info, err := os.Stat(fullPath)
 	if err != nil {
 		return "", fmt.Errorf("file not found: %s", filePath)
 	}
-	
+
 	if info.IsDir() {
 		return "", fmt.Errorf("path is a directory: %s", filePath)
 	}
@@ -181,7 +181,7 @@ func (c *Client) GetFileInfo(ctx context.Context, repoPath, filePath, branch str
 			Error: err,
 		}, nil
 	}
-	
+
 	info, err := os.Stat(fullPath)
 	if err != nil {
 		return &models.FileInfo{
@@ -224,11 +224,11 @@ func (c *Client) GetFileInfo(ctx context.Context, repoPath, filePath, branch str
 }
 
 // GetMultipleFiles returns information about multiple files
-func (c *Client) GetMultipleFiles(ctx context.Context, repoPath string, filePaths []string, branch string, maxConcurrency int) ([]models.FileInfo, error) {
+func (c *Client) GetMultipleFiles(ctx context.Context, repoPath string, filePaths []string, branch string, maxConcurrency int, config *models.ProcessingConfig) ([]models.FileInfo, error) {
 	// Add resource limits for security
-	const maxMemoryPerFile = 10 * 1024 * 1024 // 10MB per file
-	const maxTotalMemory = 100 * 1024 * 1024  // 100MB total limit
-	const maxFiles = 1000                     // Maximum number of files to process
+	maxMemoryPerFile := config.MaxMemoryPerFile
+	maxTotalMemory := config.MaxTotalMemory
+	maxFiles := config.MaxFiles
 
 	if len(filePaths) > maxFiles {
 		return nil, fmt.Errorf("too many files to process safely: %d (max: %d)", len(filePaths), maxFiles)
@@ -241,7 +241,7 @@ func (c *Client) GetMultipleFiles(ctx context.Context, repoPath string, filePath
 	// Use a semaphore to limit concurrency and WaitGroup to wait for completion
 	semaphore := make(chan struct{}, maxConcurrency)
 	results := make([]models.FileInfo, len(filePaths))
-	
+
 	// Use WaitGroup to properly wait for all goroutines
 	var wg sync.WaitGroup
 
@@ -250,7 +250,7 @@ func (c *Client) GetMultipleFiles(ctx context.Context, repoPath string, filePath
 		wg.Add(1)
 		go func(index int, path string) {
 			defer wg.Done()
-			semaphore <- struct{}{} // Acquire
+			semaphore <- struct{}{}        // Acquire
 			defer func() { <-semaphore }() // Release
 
 			fileInfo, err := c.GetFileInfo(ctx, repoPath, path, branch)

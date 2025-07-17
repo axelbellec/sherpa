@@ -21,7 +21,7 @@ type Provider interface {
 	GetRepositoryTree(ctx context.Context, repoPath, branch string) ([]models.RepositoryTree, error)
 	GetFileContent(ctx context.Context, repoPath, filePath, branch string) (string, error)
 	GetFileInfo(ctx context.Context, repoPath, filePath, branch string) (*models.FileInfo, error)
-	GetMultipleFiles(ctx context.Context, repoPath string, filePaths []string, branch string, maxConcurrency int) ([]models.FileInfo, error)
+	GetMultipleFiles(ctx context.Context, repoPath string, filePaths []string, branch string, maxConcurrency int, config *models.ProcessingConfig) ([]models.FileInfo, error)
 	TestConnection(ctx context.Context) error
 }
 
@@ -55,8 +55,8 @@ func (p *GitLabProvider) GetFileInfo(ctx context.Context, repoPath, filePath, br
 	return p.client.GetFileInfo(ctx, repoPath, filePath, branch)
 }
 
-func (p *GitLabProvider) GetMultipleFiles(ctx context.Context, repoPath string, filePaths []string, branch string, maxConcurrency int) ([]models.FileInfo, error) {
-	return p.client.GetMultipleFiles(ctx, repoPath, filePaths, branch, maxConcurrency)
+func (p *GitLabProvider) GetMultipleFiles(ctx context.Context, repoPath string, filePaths []string, branch string, maxConcurrency int, config *models.ProcessingConfig) ([]models.FileInfo, error) {
+	return p.client.GetMultipleFiles(ctx, repoPath, filePaths, branch, maxConcurrency, config)
 }
 
 func (p *GitLabProvider) TestConnection(ctx context.Context) error {
@@ -109,12 +109,12 @@ func (p *GitHubProvider) GetFileInfo(ctx context.Context, repoPath, filePath, br
 	return p.client.GetFileInfo(ctx, owner, repo, filePath, branch)
 }
 
-func (p *GitHubProvider) GetMultipleFiles(ctx context.Context, repoPath string, filePaths []string, branch string, maxConcurrency int) ([]models.FileInfo, error) {
+func (p *GitHubProvider) GetMultipleFiles(ctx context.Context, repoPath string, filePaths []string, branch string, maxConcurrency int, config *models.ProcessingConfig) ([]models.FileInfo, error) {
 	owner, repo, err := parseGitHubRepoPath(repoPath)
 	if err != nil {
 		return nil, err
 	}
-	return p.client.GetMultipleFiles(ctx, owner, repo, filePaths, branch, maxConcurrency)
+	return p.client.GetMultipleFiles(ctx, owner, repo, filePaths, branch, maxConcurrency, config)
 }
 
 func (p *GitHubProvider) TestConnection(ctx context.Context) error {
@@ -151,8 +151,8 @@ func (p *LocalProvider) GetFileInfo(ctx context.Context, repoPath, filePath, bra
 	return p.client.GetFileInfo(ctx, repoPath, filePath, branch)
 }
 
-func (p *LocalProvider) GetMultipleFiles(ctx context.Context, repoPath string, filePaths []string, branch string, maxConcurrency int) ([]models.FileInfo, error) {
-	return p.client.GetMultipleFiles(ctx, repoPath, filePaths, branch, maxConcurrency)
+func (p *LocalProvider) GetMultipleFiles(ctx context.Context, repoPath string, filePaths []string, branch string, maxConcurrency int, config *models.ProcessingConfig) ([]models.FileInfo, error) {
+	return p.client.GetMultipleFiles(ctx, repoPath, filePaths, branch, maxConcurrency, config)
 }
 
 func (p *LocalProvider) TestConnection(ctx context.Context) error {
@@ -179,7 +179,7 @@ func ParseRepositoryURL(input string, defaultPlatform models.Platform) (*models.
 		if err != nil {
 			return nil, fmt.Errorf("invalid local path: %w", err)
 		}
-		
+
 		// Validate that the path exists and is a directory
 		if info, err := os.Stat(absPath); err != nil || !info.IsDir() {
 			return nil, fmt.Errorf("local path does not exist or is not a directory: %s", input)
@@ -252,19 +252,19 @@ func ParseRepositoryURL(input string, defaultPlatform models.Platform) (*models.
 // isLocalPath checks if the input appears to be a local filesystem path
 func isLocalPath(input string) bool {
 	// Check for common local path indicators
-	if strings.HasPrefix(input, "/") || 
-		strings.HasPrefix(input, "./") || 
-		strings.HasPrefix(input, "../") || 
+	if strings.HasPrefix(input, "/") ||
+		strings.HasPrefix(input, "./") ||
+		strings.HasPrefix(input, "../") ||
 		strings.HasPrefix(input, "~") ||
 		(len(input) > 2 && input[1] == ':' && (input[0] >= 'A' && input[0] <= 'Z' || input[0] >= 'a' && input[0] <= 'z')) { // Windows drive letters
 		return true
 	}
-	
+
 	// Check if it's a relative path that exists on the filesystem
 	if info, err := os.Stat(input); err == nil && info.IsDir() {
 		return true
 	}
-	
+
 	return false
 }
 

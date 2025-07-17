@@ -37,8 +37,8 @@ func (m *MockProvider) GetFileInfo(ctx context.Context, repoPath, filePath, bran
 	return args.Get(0).(*models.FileInfo), args.Error(1)
 }
 
-func (m *MockProvider) GetMultipleFiles(ctx context.Context, repoPath string, filePaths []string, branch string, maxConcurrency int) ([]models.FileInfo, error) {
-	args := m.Called(ctx, repoPath, filePaths, branch, maxConcurrency)
+func (m *MockProvider) GetMultipleFiles(ctx context.Context, repoPath string, filePaths []string, branch string, maxConcurrency int, config *models.ProcessingConfig) ([]models.FileInfo, error) {
+	args := m.Called(ctx, repoPath, filePaths, branch, maxConcurrency, config)
 	return args.Get(0).([]models.FileInfo), args.Error(1)
 }
 
@@ -119,7 +119,7 @@ func TestRepoProcessor_ProcessRepository(t *testing.T) {
 
 		mockProvider.On("GetRepository", mock.Anything, "owner/test-repo").Return(repo, nil)
 		mockProvider.On("GetRepositoryTree", mock.Anything, "owner/test-repo", "main").Return(tree, nil)
-		mockProvider.On("GetMultipleFiles", mock.Anything, "owner/test-repo", []string{"README.md", "src/main.go"}, "main", 5).Return(files, nil)
+		mockProvider.On("GetMultipleFiles", mock.Anything, "owner/test-repo", []string{"README.md", "src/main.go"}, "main", 5, mock.Anything).Return(files, nil)
 
 		result, err := processor.ProcessRepository(context.Background(), "owner/test-repo", "main")
 		require.NoError(t, err)
@@ -199,7 +199,7 @@ func TestRepoProcessor_ProcessRepository(t *testing.T) {
 
 		mockProvider.On("GetRepository", mock.Anything, "owner/test-repo").Return(repo, nil)
 		mockProvider.On("GetRepositoryTree", mock.Anything, "owner/test-repo", "main").Return(tree, nil)
-		mockProvider.On("GetMultipleFiles", mock.Anything, "owner/test-repo", []string{"README.md"}, "main", 2).Return(files, nil)
+		mockProvider.On("GetMultipleFiles", mock.Anything, "owner/test-repo", []string{"README.md"}, "main", 2, mock.Anything).Return(files, nil)
 
 		result, err := processor.ProcessRepository(context.Background(), "owner/test-repo", "main")
 		require.NoError(t, err)

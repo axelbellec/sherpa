@@ -159,20 +159,20 @@ func IsBinaryFile(filePath string) bool {
 	// Check for high ratio of non-printable characters
 	nonPrintable := 0
 	controlChars := 0
-	
+
 	for i := 0; i < n; i++ {
 		b := buffer[i]
-		
+
 		// Allow common control characters
 		if b == 9 || b == 10 || b == 13 { // tab, newline, carriage return
 			continue
 		}
-		
+
 		// Count control characters (0-31, 127-159)
 		if b < 32 || (b >= 127 && b < 160) {
 			controlChars++
 		}
-		
+
 		// Count non-printable characters
 		if !unicode.IsPrint(rune(b)) && !unicode.IsSpace(rune(b)) {
 			nonPrintable++
@@ -182,7 +182,7 @@ func IsBinaryFile(filePath string) bool {
 	// If more than 30% non-printable or more than 5% control characters, consider it binary
 	nonPrintableRatio := float64(nonPrintable) / float64(n)
 	controlRatio := float64(controlChars) / float64(n)
-	
+
 	if nonPrintableRatio > 0.3 || controlRatio > 0.05 {
 		return true
 	}

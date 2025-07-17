@@ -58,18 +58,18 @@ task tests
 
 ```bash
 # GitHub repository
-sherpa fetch owner/repo --token $GITHUB_TOKEN
+sherpa owner/repo --token $GITHUB_TOKEN
 
 # GitLab repository
-sherpa fetch https://gitlab.com/owner/repo --token $GITLAB_TOKEN
+sherpa https://gitlab.com/owner/repo --token $GITLAB_TOKEN
 
 # Local folder
-sherpa fetch /path/to/my/project
-sherpa fetch ./src/backend
-sherpa fetch ~/my-projects/frontend
+sherpa /path/to/my/project
+sherpa ./src/backend
+sherpa ~/my-projects/frontend
 
 # Multiple repositories with high concurrency
-sherpa fetch repo1 repo2 repo3 \
+sherpa repo1 repo2 repo3 \
   --max-repos-concurrency 10 \
   --max-files-concurrency 50 \
   --token $GITHUB_TOKEN
@@ -80,25 +80,25 @@ sherpa fetch repo1 repo2 repo3 \
 ### Single Repository
 
 ```bash
-# Fetch a GitHub repository
-sherpa fetch microsoft/vscode --token $GITHUB_TOKEN --output ./context
+# Process a GitHub repository
+sherpa microsoft/vscode --token $GITHUB_TOKEN --output ./context
 
-# Fetch a GitLab repository with custom ignore patterns
-sherpa fetch gitlab-org/gitlab --token $GITLAB_TOKEN \
+# Process a GitLab repository with custom ignore patterns
+sherpa gitlab-org/gitlab --token $GITLAB_TOKEN \
   --ignore "*.test.js,node_modules/,*.log"
 
-# Fetch a local folder
-sherpa fetch ~/my-projects/web-app --output ./context
+# Process a local folder
+sherpa ~/my-projects/web-app --output ./context
 
-# Fetch current directory
-sherpa fetch . --output ./context
+# Process current directory
+sherpa . --output ./context
 ```
 
 ### Multiple Repositories and Local Folders
 
 ```bash
 # Process multiple repositories concurrently
-sherpa fetch \
+sherpa \
   facebook/react \
   vercel/next.js \
   microsoft/typescript \
@@ -106,14 +106,14 @@ sherpa fetch \
   --token $GITHUB_TOKEN
 
 # Mix remote repositories and local folders
-sherpa fetch \
+sherpa \
   facebook/react \
   ~/my-projects/backend \
   ./frontend \
   --token $GITHUB_TOKEN
 
 # Process multiple local folders
-sherpa fetch \
+sherpa \
   ~/projects/frontend \
   ~/projects/backend \
   ~/projects/shared \
@@ -124,12 +124,12 @@ sherpa fetch \
 
 ```bash
 # GitLab Enterprise
-sherpa fetch internal/backend-api \
+sherpa internal/backend-api \
   --token $GITLAB_TOKEN \
   --base-url https://gitlab.company.com
 
 # GitHub Enterprise
-sherpa fetch enterprise/frontend \
+sherpa enterprise/frontend \
   --token $GITHUB_TOKEN \
   --base-url https://github.company.com/api/v3
 ```
@@ -138,17 +138,17 @@ sherpa fetch enterprise/frontend \
 
 ```bash
 # Process current project with dependencies
-sherpa fetch . ../shared-library --output ./debug-context
+sherpa . ../shared-library --output ./debug-context
 
 # Process multiple local microservices
-sherpa fetch \
+sherpa \
   ./services/auth \
   ./services/payment \
   ./services/notification \
   --max-repos-concurrency 5
 
 # Mix local and remote for full context
-sherpa fetch \
+sherpa \
   . \
   ../shared-utils \
   company/shared-configs \

@@ -57,10 +57,13 @@ func (l *Loader) getDefaultConfig() *models.Config {
 				"*.tmp",
 				".DS_Store",
 			},
-			IncludeOnly:    []string{},
-			MaxFileSize:    "1MB",
-			SkipBinary:     true,
-			MaxConcurrency: 20,
+			IncludeOnly:      []string{},
+			MaxFileSize:      "1MB",
+			SkipBinary:       true,
+			MaxConcurrency:   20,
+			MaxMemoryPerFile: 50 * 1024 * 1024,  // 50MB per file
+			MaxTotalMemory:   2 * 1024 * 1024 * 1024, // 2GB total limit
+			MaxFiles:         1000,              // Maximum number of files to process
 		},
 		Output: models.OutputConfig{
 			Directory:      "./sherpa-output",
@@ -95,6 +98,18 @@ func (l *Loader) OverrideWithFlags(config *models.Config, flags *models.CLIOptio
 
 	if flags.IncludeOnly != "" {
 		config.Processing.IncludeOnly = utils.ParsePatterns(flags.IncludeOnly)
+	}
+
+	if flags.MaxMemoryPerFile > 0 {
+		config.Processing.MaxMemoryPerFile = flags.MaxMemoryPerFile
+	}
+
+	if flags.MaxTotalMemory > 0 {
+		config.Processing.MaxTotalMemory = flags.MaxTotalMemory
+	}
+
+	if flags.MaxFiles > 0 {
+		config.Processing.MaxFiles = flags.MaxFiles
 	}
 
 	return nil
